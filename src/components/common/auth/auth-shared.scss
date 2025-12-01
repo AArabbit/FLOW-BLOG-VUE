@@ -1,0 +1,61 @@
+@use "@/assets/styles/_variables.scss" as *;
+
+.input-group {
+  label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-sub);
+
+    .forgot-link {
+      font-size: 0.75rem;
+      color: #999;
+      cursor: pointer;
+      letter-spacing: 0;
+
+      &:hover {
+        text-decoration: underline;
+        color: var(--primary-color);
+      }
+    }
+  }
+}
+
+.status-msg {
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 10px;
+  border-radius: 4px;
+
+  &.error {
+    color: #d00000;
+    background: rgba(208, 0, 0, 0.1);
+  }
+
+  &.success {
+    color: #2a9d8f;
+    background: rgba(42, 157, 143, 0.1);
+  }
+}
+
+.switch-mode {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  margin-top: 10px;
+
+  .link {
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-left: 5px;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}

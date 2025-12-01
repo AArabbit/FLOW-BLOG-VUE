@@ -1,0 +1,78 @@
+// 显式引入所有依赖，保证 main.scss 能独立编译
+@use "@/assets/styles/_variables.scss" as *;
+@use "@/assets/styles/_mixins.scss" as *;
+
+:root {
+  --primary-color: #2a2a2a; 
+  --bg-color: #f7f7f5;
+  --card-bg: #ffffff;
+  --text-main: #1a1a1a;
+  --text-sub: #666666;
+  --border-light: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(247, 247, 245, 0.85);
+  --mask-bg: rgba(255, 255, 255, 0.9);
+  --code-bg: #eef;
+}
+
+html.dark {
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
+  --text-main: #e0e0e0;
+  --text-sub: #a0a0a0;
+  --border-light: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(18, 18, 18, 0.85);
+  --mask-bg: rgba(0, 0, 0, 0.8);
+  --code-bg: #2b2b2b;
+}
+
+* {
+  margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: $font-main; // 使用变量
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+a { text-decoration: none; color: inherit; cursor: pointer; }
+ul { list-style: none; }
+
+// Lenis
+html.lenis { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+// 过渡动画类 依赖变量
+.fade-enter-active, .fade-leave-active { 
+  transition: opacity 0.5s $transition-smooth; 
+}
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+// 核心工具类 Navbar 和文章页依赖
+.view-container {
+  min-height: 100vh;
+  padding-top: 140px;
+  padding-bottom: 80px;
+  padding-left: 5vw;
+  padding-right: 5vw;
+  position: relative;
+}
+
+.page-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  font-size: 1.1rem; color: var(--text-sub); font-family: $font-main; line-height: 1.6;
+}
+
+.font-space { font-family: $font-main; letter-spacing: 0.05em; }
+.theme-transition { transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease; }

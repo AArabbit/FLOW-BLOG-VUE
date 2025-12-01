@@ -1,0 +1,36 @@
+@use "sass:map"; 
+
+// 变量
+
+// 颜色系统
+$primary-color: var(--primary-color, #2a2a2a);
+$bg-color: var(--bg-color, #f7f7f5);
+$card-bg: var(--card-bg, #ffffff);
+$text-main: var(--text-main, #1a1a1a);
+$text-sub: var(--text-sub, #666666);
+$border-light: var(--border-light, rgba(0, 0, 0, 0.06));
+
+// 字体
+$font-main: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+$font-mono: 'Courier New', monospace;
+
+// 动画曲线
+$ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+$transition-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+$ease-smooth: $transition-smooth; 
+
+// 层级管理
+$z-layers: (
+  'negative': -1,
+  'base': 1,
+  'card-hover': 10,
+  'dropdown': 50,
+  'navbar': 100,
+  'drawer': 200,
+  'modal': 1000,
+  'tooltip': 2000
+);
+
+@function z($layer) {
+  @return map.get($z-layers, $layer);
+}

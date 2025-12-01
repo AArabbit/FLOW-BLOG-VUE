@@ -1,0 +1,71 @@
+// 必须显式引入变量文件，且路径要正确
+@use "@/assets/styles/_variables.scss" as *;
+
+// Flexbox
+@mixin flex($justify: center, $align: center, $dir: row) {
+  display: flex;
+  justify-content: $justify;
+  align-items: $align;
+  flex-direction: $dir;
+}
+
+@mixin flex-between {
+  @include flex(space-between, center);
+}
+
+@mixin flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+// Visual
+@mixin glass-effect {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-light);
+}
+
+@mixin abs-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+}
+
+@mixin abs-cover {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+}
+
+// Text
+@mixin text-clamp($lines: 2) {
+  display: -webkit-box; -webkit-line-clamp: $lines; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;
+}
+
+@mixin text-truncate($lines: 1) {
+  @if $lines == 1 {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  } @else {
+    @include text-clamp($lines);
+  }
+}
+
+// Interaction
+
+@mixin hover-lift($y: -10px) {
+  // 显式定义 transition，不依赖简写，确保优先级
+  transition-property: transform, box-shadow;
+  transition-duration: 0.5s;
+  transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); // $ease-out
+  
+  &:hover {
+    transform: translateY($y);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Layout
+@mixin section-padding {
+  padding: 120px 5vw;
+  @media (max-width: 768px) { padding: 80px 5vw; }
+}
+
+@mixin mobile {
+  @media (max-width: 768px) { @content; }
+}
