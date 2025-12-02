@@ -15,6 +15,7 @@ export interface Post {
   views: number
   cover: string
   codeSnippet?: string
+  content?: string
 }
 
 // 修改 User 接口

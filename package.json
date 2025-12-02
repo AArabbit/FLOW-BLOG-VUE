@@ -9,9 +9,11 @@
   "dependencies": {
     "@phosphor-icons/web": "^2.0.3",
     "@studio-freight/lenis": "^1.0.29",
+    "@types/markdown-it": "^14.1.2",
     "@vueuse/head": "^2.0.0",
     "axios": "^1.6.0",
     "gsap": "^3.12.2",
+    "markdown-it": "^14.1.0",
     "marked": "^17.0.1",
     "naive-ui": "^2.35.0",
     "pinia": "^2.1.7",

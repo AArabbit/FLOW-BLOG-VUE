@@ -1,13 +1,9 @@
 <script setup lang="ts">
-// import { defineProps } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { NButton } from 'naive-ui'
 import { useThemeStore } from '@/stores/theme'
-import { useRoute } from 'vue-router'
-
-// 代码高亮相关
-import { PrismEditor } from 'vue-prism-editor'
-import 'vue-prism-editor/dist/prismeditor.min.css'
+import MarkdownIt from 'markdown-it'
 import Prism from 'prismjs'
 import 'prismjs/themes/prism-tomorrow.css'
 import 'prismjs/components/prism-javascript'
@@ -20,17 +16,43 @@ const props = defineProps<{
 const router = useRouter()
 const themeStore = useThemeStore()
 
-const highlighter = (code: string) => {
-  return Prism.highlight(code, Prism.languages.javascript, 'javascript')
+// 简单的 HTML 转义函数，避免在初始化时引用 md 实例
+const escapeHtml = (unsafe: string) => {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
+
+// 初始化 MarkdownIt
+const md: MarkdownIt = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+  highlight: function (str, lang) {
+    if (lang && Prism.languages[lang]) {
+      try {
+        return '<pre class="language-' + lang + '"><code>' +
+          Prism.highlight(str, Prism.languages[lang], lang) +
+          '</code></pre>';
+      } catch (__) { }
+    }
+    return '<pre class="language-text"><code>' + escapeHtml(str) + '</code></pre>';
+  }
+})
+
+const renderedContent = computed(() => {
+  return props.post.content ? md.render(props.post.content) : ''
+})
 
 // 返回逻辑
 const handleBack = () => {
-  // 如果历史记录中有上一页，且不是从外部直接打开的
   if (window.history.length > 1) {
-    router.back() // 触发浏览器后退，配合 KeepAlive 恢复位置
+    router.back()
   } else {
-    router.push('/') // 只有在没有历史记录时才去首页
+    router.push('/')
   }
 }
 </script>
@@ -40,39 +62,11 @@ const handleBack = () => {
     <p class="lead">{{ post.desc }}</p>
     <div class="divider"></div>
 
-    <div class="article-body">
-      <h3>第一章节：起源与思考</h3>
-      <p>在这个章节中，我们深入探讨技术的本质。随着 Vue 3.0 的发布，组合式 API 带来了逻辑复用的新范式。</p>
-
-      <div v-if="post.codeSnippet" class="code-showcase">
-        <div class="code-header">
-          <span class="dot red"></span>
-          <span class="dot yellow"></span>
-          <span class="dot green"></span>
-          <span class="lang-badge">TypeScript</span>
-        </div>
-        <prism-editor class="my-editor" v-model="post.codeSnippet" :highlight="highlighter" readonly
-          line-numbers></prism-editor>
-      </div>
-
-      <h3>第二章节：构建现代化体验</h3>
-      <p>设计不仅仅是视觉的堆砌。Awwwards 风格强调的是一种流动的体验（Flow）。</p>
-
-      <blockquote>
-        "好的设计是显而易见的，伟大的设计是透明的。"
-      </blockquote>
-
-      <h3>第三章节：未来的展望</h3>
-      <p>这不仅是一个博客，更是一个技术游乐场。</p>
-    </div>
+    <!-- 动态渲染 Markdown 内容 -->
+    <div class="article-body" v-html="renderedContent"></div>
 
     <div class="article-footer">
-      <n-button 
-        secondary 
-        size="large" 
-        @click="handleBack"
-        :style="{ '--n-text-color': themeStore.themeColor }"
-      >
+      <n-button secondary size="large" @click="handleBack" :style="{ '--n-text-color': themeStore.themeColor }">
         <template #icon><i class="ph ph-arrow-left"></i></template>
         返回
       </n-button>
@@ -104,94 +98,113 @@ const handleBack = () => {
     margin: 40px 0;
   }
 
-  :deep(h3) {
-    font-size: 1.8rem;
-    margin: 50px 0 25px;
-    font-weight: 700;
-    color: var(--text-main);
-    scroll-margin-top: 100px;
-  }
+  // Markdown 样式适配
+  :deep(.article-body) {
 
-  :deep(p) {
-    margin-bottom: 25px;
-    color: var(--text-sub);
-  }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      color: var(--text-main);
+      font-weight: 700;
+      margin: 50px 0 25px;
+      line-height: 1.3;
+      scroll-margin-top: 100px;
+    }
 
-  :deep(blockquote) {
-    border-left: 4px solid var(--primary-color);
-    padding-left: 25px;
-    font-style: italic;
-    font-size: 1.4rem;
-    margin: 40px 0;
-    font-family: $font-main;
-    color: var(--text-main);
-  }
-}
+    h2 {
+      font-size: 2rem;
+    }
 
-// 代码编辑器样式
-.code-showcase {
-  margin: 40px 0;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--border-light);
-  background: #2d2d2d;
+    h3 {
+      font-size: 1.6rem;
+    }
 
-  .code-header {
-    background: #1e1e1e;
-    padding: 12px 15px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid #333;
+    h4 {
+      font-size: 1.3rem;
+    }
 
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
+    p {
+      margin-bottom: 25px;
+      color: var(--text-sub);
+    }
 
-      &.red {
-        background: #ff5f56;
-      }
+    ul,
+    ol {
+      margin-bottom: 25px;
+      padding-left: 25px;
+      color: var(--text-sub);
 
-      &.yellow {
-        background: #ffbd2e;
-      }
+      li {
+        margin-bottom: 10px;
 
-      &.green {
-        background: #27c93f;
+        &::marker {
+          color: var(--primary-color);
+        }
       }
     }
 
-    .lang-badge {
-      margin-left: auto;
-      font-size: 0.75rem;
-      color: #888;
+    blockquote {
+      border-left: 4px solid var(--primary-color);
+      padding-left: 25px;
+      font-style: italic;
+      font-size: 1.4rem;
+      margin: 40px 0;
+      font-family: $font-main;
+      color: var(--text-main);
+      background: rgba(128, 128, 128, 0.05);
+      padding: 20px 25px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    // 代码块样式
+    pre {
+      background: #2d2d2d;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 30px 0;
+      overflow-x: auto;
       font-family: $font-mono;
-      text-transform: uppercase;
-    }
-  }
+      font-size: 0.9rem;
+      line-height: 1.6;
+      border: 1px solid var(--border-light);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 
-  .my-editor {
-    background: #2d2d2d;
-    color: #ccc;
-    font-family: $font-mono;
-    font-size: 0.9rem;
-    line-height: 1.6;
-    padding: 20px 10px;
-
-    :deep(.prism-editor__textarea:focus) {
-      outline: none;
+      code {
+        background: transparent;
+        padding: 0;
+        color: #ccc;
+      }
     }
 
-    &::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: #444;
+    // 行内代码
+    :not(pre)>code {
+      background: rgba(128, 128, 128, 0.15);
+      padding: 2px 6px;
       border-radius: 4px;
+      font-family: $font-mono;
+      font-size: 0.9em;
+      color: var(--primary-color);
+    }
+
+    img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin: 30px 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    a {
+      color: var(--primary-color);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s;
+
+      &:hover {
+        border-bottom-color: var(--primary-color);
+      }
     }
   }
 }
