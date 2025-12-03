@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { NButton } from 'naive-ui'
 import { useThemeStore } from '@/stores/theme'
 import MarkdownIt from 'markdown-it'
 import Prism from 'prismjs'
-import 'prismjs/themes/prism-tomorrow.css'
-import 'prismjs/components/prism-javascript'
-import 'prismjs/components/prism-typescript'
+// import 'prismjs/themes/prism-tomorrow.css'
+// import 'prismjs/components/prism-javascript'
+// import 'prismjs/components/prism-typescript'
 
 const props = defineProps<{
   post: any
@@ -15,15 +15,35 @@ const props = defineProps<{
 
 const router = useRouter()
 const themeStore = useThemeStore()
+const articleRef = ref<HTMLElement | null>(null)
 
-// 简单的 HTML 转义函数，避免在初始化时引用 md 实例
-const escapeHtml = (unsafe: string) => {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+// 注册“展开/收起”按钮
+const registerCollapseButton = () => {
+  if (!Prism.plugins.toolbar) return
+  Prism.plugins.toolbar.registerButton('toggle-expand', {
+    text: '收起',
+    onClick: function (env: any) {
+      // 父级 <pre>
+      const pre = env.element.parentElement
+      if (!pre) return
+
+      // 切换 collapsed 类名
+      const isCollapsed = pre.classList.toggle('code-collapsed')
+
+      // 修改按钮文字
+      const btn = env.button as HTMLButtonElement
+      btn.textContent = isCollapsed ? '展开' : '收起'
+    }
+  })
+}
+
+// 执行高亮 
+const highlightCode = () => {
+  // await nextTick() 
+  if (!articleRef.value) return
+
+  registerCollapseButton() // 注册按钮
+  Prism.highlightAllUnder(articleRef.value) // 只高亮文章内容区域
 }
 
 // 初始化 MarkdownIt
@@ -31,16 +51,6 @@ const md: MarkdownIt = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
-  highlight: function (str, lang) {
-    if (lang && Prism.languages[lang]) {
-      try {
-        return '<pre class="language-' + lang + '"><code>' +
-          Prism.highlight(str, Prism.languages[lang], lang) +
-          '</code></pre>';
-      } catch (__) { }
-    }
-    return '<pre class="language-text"><code>' + escapeHtml(str) + '</code></pre>';
-  }
 })
 
 const renderedContent = computed(() => {
@@ -55,6 +65,10 @@ const handleBack = () => {
     router.push('/')
   }
 }
+
+defineExpose({
+		highlightCode
+	})
 </script>
 
 <template>
@@ -63,7 +77,7 @@ const handleBack = () => {
     <div class="divider"></div>
 
     <!-- 动态渲染 Markdown 内容 -->
-    <div class="article-body" v-html="renderedContent"></div>
+    <div class="article-body" v-html="renderedContent" ref="articleRef"></div>
 
     <div class="article-footer">
       <n-button secondary size="large" @click="handleBack" :style="{ '--n-text-color': themeStore.themeColor }">

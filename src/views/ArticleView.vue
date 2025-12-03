@@ -15,6 +15,8 @@ import CommentSection from '@/components/article/CommentSection.vue'
 const route = useRoute()
 const postStore = usePostStore()
 
+const contentRef = ref<any>()
+
 // 状态改为 Ref，用于存储异步获取的数据
 const post = ref<Post | undefined>(undefined)
 const isLoading = ref(true)
@@ -53,6 +55,8 @@ onMounted(async () => {
     const tl = gsap.timeline()
     tl.from('.article-hero', { scale: 1.02, opacity: 0, duration: 1.2, ease: "power2.out" })
       .from('.content-layout', { y: 30, opacity: 0, duration: 0.8 }, "-=0.8")
+
+    contentRef.value.highlightCode()
   }
 })
 </script>
@@ -84,7 +88,7 @@ onMounted(async () => {
         <div class="content-layout">
 
           <div class="left-column">
-            <ArticleContent :post="post" />
+            <ArticleContent :post="post" ref="contentRef"/>
             <CommentSection :post-id="post.id" />
           </div>
 

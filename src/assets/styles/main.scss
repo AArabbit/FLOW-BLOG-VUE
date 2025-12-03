@@ -3,7 +3,7 @@
 @use "@/assets/styles/_mixins.scss" as *;
 
 :root {
-  --primary-color: #2a2a2a; 
+  --primary-color: #2a2a2a;
   --bg-color: #f7f7f5;
   --card-bg: #ffffff;
   --text-main: #1a1a1a;
@@ -26,7 +26,10 @@ html.dark {
 }
 
 * {
-  margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
@@ -37,20 +40,43 @@ body {
   transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-a { text-decoration: none; color: inherit; cursor: pointer; }
-ul { list-style: none; }
+a {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+ul {
+  list-style: none;
+}
 
 // Lenis
-html.lenis { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto; }
-.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
-.lenis.lenis-stopped { overflow: hidden; }
+html.lenis {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
 
 // 过渡动画类 依赖变量
-.fade-enter-active, .fade-leave-active { 
-  transition: opacity 0.5s $transition-smooth; 
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s $transition-smooth;
 }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 
 // 核心工具类 Navbar 和文章页依赖
 .view-container {
@@ -71,8 +97,92 @@ html.lenis { height: auto; }
 }
 
 .page-subtitle {
-  font-size: 1.1rem; color: var(--text-sub); font-family: $font-main; line-height: 1.6;
+  font-size: 1.1rem;
+  color: var(--text-sub);
+  font-family: $font-main;
+  line-height: 1.6;
 }
 
-.font-space { font-family: $font-main; letter-spacing: 0.05em; }
-.theme-transition { transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease; }
+.font-space {
+  font-family: $font-main;
+  letter-spacing: 0.05em;
+}
+
+.theme-transition {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+
+/* 1. 代码块容器的基础样式 */
+pre[class*="language-"] {
+  position: relative;
+  /* 默认展开时的样式 */
+  transition: max-height 0.3s ease;
+  max-height: 2000px;
+  /* 足够显示长代码 */
+  overflow: auto;
+}
+
+/* 2. 收起状态的样式 (由 JS 切换此 class) */
+pre.code-collapsed {
+  max-height: 120px !important;
+  /* 收起后的固定高度 */
+  overflow: hidden !important;
+
+  /* 底部渐变遮罩：提示用户代码被截断 */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    /* 请根据你的代码块背景色修改这里的颜色 */
+    /* 如果是深色主题 (tomorrow/twilight)，用 rgba(45,45,45, 1) */
+    /* 如果是浅色主题 (default)，用 rgba(255,255,255, 1) */
+    background: linear-gradient(to bottom, transparent, rgba(45, 45, 45, 1));
+    pointer-events: none;
+  }
+}
+
+/* 3. 定制 Prism Toolbar (右上角的按钮区域) */
+div.code-toolbar {
+  position: relative;
+
+  /* 默认隐藏工具栏，鼠标悬停时才显示，保持页面整洁 */
+  >.toolbar {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 10;
+  }
+
+  &:hover>.toolbar {
+    opacity: 1;
+  }
+
+  /* 按钮样式微调 */
+  >.toolbar .toolbar-item {
+    margin-left: 5px;
+
+    button {
+      background: rgba(255, 255, 255, 0.2);
+      /* 半透明背景 */
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ccc;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: none;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+      }
+    }
+  }
+}

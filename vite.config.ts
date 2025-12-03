@@ -2,6 +2,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { createHtmlPlugin } from 'vite-plugin-html'
+import prismjs from 'vite-plugin-prismjs'
 
 // mode：'development' 或 'production'
 export default defineConfig(({ mode }) => {
@@ -19,6 +20,19 @@ export default defineConfig(({ mode }) => {
           },
         },
       }),
+      prismjs({
+        // 你需要的语言
+        languages: ['javascript', 'typescript', 'css', 'html', 'json', 'java', 'sql', 'bash', 'go'],
+        // 核心插件配置
+        plugins: [
+          'toolbar',           // 必须：工具栏插件，用于挂载按钮
+          'show-language',     // 可选：显示语言标签
+          'copy-to-clipboard', // 核心：复制功能
+          // 'line-numbers'    // 可选：如果需要行号可以加上
+        ],
+        theme: 'tomorrow',     // 主题：'tomorrow', 'okaidia', 'twilight' 等
+        css: true,
+      })
     ],
     base: "./",
     resolve: {
