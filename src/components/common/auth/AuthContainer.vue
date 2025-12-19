@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import gsap from 'gsap'
+import { PhX } from "@phosphor-icons/vue";
 
 const props = defineProps<{
   show: boolean
@@ -50,7 +51,7 @@ const handleClose = () => {
 
         <slot></slot>
 
-        <button class="close-icon" @click="handleClose"><i class="ph ph-x"></i></button>
+        <button class="close-icon" @click="handleClose"><PhX /></button>
       </div>
     </div>
   </Teleport>

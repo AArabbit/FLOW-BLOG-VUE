@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import gsap from 'gsap'
 import { usePostStore } from '@/stores/posts'
 import { useThemeStore } from '@/stores/theme'
+import { useArticleModalStore } from '@/stores/articleModal'
 import { usePagination } from '@/utils/usePagination'
 
 // 引入拆分的子组件
@@ -12,7 +12,7 @@ import SearchResults from '@/components/search/SearchResults.vue'
 
 const postStore = usePostStore()
 const themeStore = useThemeStore()
-const router = useRouter()
+const articleModalStore = useArticleModalStore()
 
 const query = ref('')
 const overlayRef = ref<HTMLElement | null>(null)
@@ -26,7 +26,7 @@ const {
   isLoading,
   isInitialLoad,
   hasMore,
-  sentinelRef, // 这是 Hook 返回的 ref，需要同步到子组件的 DOM
+  sentinelRef,
   loadData,
   initObserver
 } = usePagination((page) => postStore.fetchPosts({
@@ -35,7 +35,6 @@ const {
   keyword: query.value
 }))
 
-// 同步子组件的 sentinel ref 给 hook 使用
 watch(() => resultsComponentRef.value?.sentinelRef, (el) => {
   if (el) sentinelRef.value = el
 })
@@ -70,7 +69,6 @@ watch(() => themeStore.searchOpen, (isOpen) => {
       const tl = gsap.timeline()
       tl.set(overlayRef.value, { opacity: 0 })
         .to(overlayRef.value, { opacity: 1, duration: 0.4 })
-        // 这里的 class 选择器依然有效，因为子组件没有使用 shadow dom
         .fromTo('.search-input',
           { y: 50, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" },
@@ -99,8 +97,10 @@ const closeSearch = () => {
 }
 
 const goToArticle = (id: number) => {
-  closeSearch()
-  router.push(`/article/${id}`)
+  if (window.innerWidth < 768) {
+    closeSearch()
+  }
+   articleModalStore.open(id)
 }
 
 const handleKeydown = (e: KeyboardEvent) => {

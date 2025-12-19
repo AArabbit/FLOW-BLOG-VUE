@@ -19,7 +19,7 @@ const viewMode = ref<ViewMode>('login')
 // 计算标题
 const title = computed(() => {
   switch (viewMode.value) {
-    case 'register': return '加入社区'
+    case 'register': return '欢迎注册'
     case 'forgot': return '重置密码'
     default: return '欢迎回来'
   }
@@ -27,7 +27,7 @@ const title = computed(() => {
 
 const subtitle = computed(() => {
   switch (viewMode.value) {
-    case 'register': return '开启您的创作之旅'
+    case 'register': return ''
     case 'forgot': return '通过邮箱找回您的账号'
     default: return '请登录以发表您的观点'
   }
@@ -43,17 +43,15 @@ watch(() => uiStore.showLoginModal, (val) => {
 
 // 切换视图的平滑过渡动画
 const handleSwitch = (mode: ViewMode) => {
-  // 1. 淡出当前内容
   gsap.to(contentRef.value, {
     opacity: 0,
     y: 10,
     duration: 0.2,
     onComplete: () => {
-      // 2. 切换数据
       viewMode.value = mode
       uiStore.resetAuthStatus()
 
-      // 3. 重新渲染并进场
+      // 重新渲染并进场
       nextTick(() => {
         gsap.fromTo(contentRef.value,
           { opacity: 0, y: -10 },
@@ -66,7 +64,7 @@ const handleSwitch = (mode: ViewMode) => {
 
 // 注册/重置成功后，延迟跳转回登录
 const handleSuccess = () => {
-  setTimeout(() => handleSwitch('login'), 1500)
+  setTimeout(() => handleSwitch('login'), 1000)
 }
 
 const close = () => uiStore.toggleLoginModal(false)

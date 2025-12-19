@@ -42,9 +42,6 @@ export function usePagination<T>(
       // GSAP 进场动画
       if (res.list.length > 0 && options.animationClass) {
         await nextTick()
-        // 只选择新加入的元素进行动画不太好定位，这里简单处理：
-        // 实际场景中通常由 View 层监听 list 变化处理，或者这里不做动画
-        // 但为了方便，我们可以尝试在这里触发一个回调
       }
 
     } catch (e) {

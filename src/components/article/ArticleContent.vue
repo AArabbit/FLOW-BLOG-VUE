@@ -1,74 +1,90 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, onMounted, nextTick, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { NButton } from 'naive-ui'
 import { useThemeStore } from '@/stores/theme'
-import MarkdownIt from 'markdown-it'
-import Prism from 'prismjs'
-// import 'prismjs/themes/prism-tomorrow.css'
-// import 'prismjs/components/prism-javascript'
-// import 'prismjs/components/prism-typescript'
+import Vditor from 'vditor'
+import 'vditor/dist/index.css'
+import { enhanceCodeBlocks } from '@/utils/dom/code-block'
+import '@/assets/styles/markdown-custom.scss'
+import ArticleSkeleton from './ArticleSkeleton.vue'
 
-const props = defineProps<{
-  post: any
-}>()
-
+const props = defineProps<{ post: any }>()
+const emit = defineEmits<{ (e: 'content-rendered'): void }>()
 const router = useRouter()
 const themeStore = useThemeStore()
-const articleRef = ref<HTMLElement | null>(null)
 
-// 注册“展开/收起”按钮
-const registerCollapseButton = () => {
-  if (!Prism.plugins.toolbar) return
-  Prism.plugins.toolbar.registerButton('toggle-expand', {
-    text: '收起',
-    onClick: function (env: any) {
-      // 父级 <pre>
-      const pre = env.element.parentElement
-      if (!pre) return
+const previewRef = ref<HTMLDivElement | null>(null)
 
-      // 切换 collapsed 类名
-      const isCollapsed = pre.classList.toggle('code-collapsed')
+// 动画状态控制
+const isRendering = ref(true) 
+const isVisible = ref(false)
 
-      // 修改按钮文字
-      const btn = env.button as HTMLButtonElement
-      btn.textContent = isCollapsed ? '展开' : '收起'
+const renderContent = async () => {
+
+  isVisible.value = false
+  isRendering.value = true
+  if (previewRef.value) previewRef.value.innerHTML = ''
+  
+  if (!props.post.content) return
+
+  await new Promise(resolve => setTimeout(resolve, 300))
+  await nextTick()
+  
+  if (!previewRef.value) return
+
+  const isDark = document.documentElement.classList.contains('dark') || themeStore.isDark
+
+  try {
+    // 3. 渲染 Vditor
+    await Vditor.preview(previewRef.value, props.post.content, {
+      cdn: '/vditor', 
+      mode: isDark ? 'dark' : 'light',
+      theme: { current: isDark ? 'dark' : 'light' },
+      hljs: { style: isDark ? 'native' : 'github', lineNumber: false }
+    })
+    
+    // 代码高亮增强
+    if (previewRef.value) {
+      enhanceCodeBlocks(previewRef.value)
     }
-  })
-}
 
-// 执行高亮 
-const highlightCode = () => {
-  // await nextTick() 
-  if (!articleRef.value) return
+    // 5. 关闭骨架屏
+    isRendering.value = false
 
-  registerCollapseButton() // 注册按钮
-  Prism.highlightAllUnder(articleRef.value) // 只高亮文章内容区域
-}
+    setTimeout(() => {
+      isVisible.value = true
+      // 这里的 emit 非常重要，它通知 ArticleModal 去调用 initTOC
+      nextTick(() => {
+        emit('content-rendered')
+      })
+    }, 50)
 
-// 初始化 MarkdownIt
-const md: MarkdownIt = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true,
-})
-
-const renderedContent = computed(() => {
-  return props.post.content ? md.render(props.post.content) : ''
-})
-
-// 返回逻辑
-const handleBack = () => {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    router.push('/')
+  } catch (error) {
+    console.error('Vditor render failed:', error)
+    isRendering.value = false
+    isVisible.value = true 
   }
 }
 
-defineExpose({
-		highlightCode
-	})
+// 监听 ID 变化
+watch(() => props.post.id, (newId, oldId) => {
+  if (newId !== oldId) {
+    renderContent()
+  }
+})
+
+watch(() => themeStore.isDark, renderContent)
+
+// 生命周期
+onMounted(() => {
+  renderContent()
+})
+
+onBeforeUnmount(() => {
+  if (previewRef.value) {
+    previewRef.value.innerHTML = ''
+  }
+})
 </script>
 
 <template>
@@ -76,150 +92,89 @@ defineExpose({
     <p class="lead">{{ post.desc }}</p>
     <div class="divider"></div>
 
-    <!-- 动态渲染 Markdown 内容 -->
-    <div class="article-body" v-html="renderedContent" ref="articleRef"></div>
+    <div class="content-area">
+      <Transition name="fade-skeleton">
+        <ArticleSkeleton v-if="isRendering" />
+      </Transition>
 
-    <div class="article-footer">
-      <n-button secondary size="large" @click="handleBack" :style="{ '--n-text-color': themeStore.themeColor }">
-        <template #icon><i class="ph ph-arrow-left"></i></template>
-        返回
-      </n-button>
+      <div class="viewer-container" :class="{ 'is-visible': isVisible }">
+        <!-- 增加 key 强制 DOM 刷新 -->
+        <div ref="previewRef" :key="post.id" class="vditor-reset markdown-body"></div>
+      </div>
     </div>
   </article>
 </template>
 
 <style lang="scss" scoped>
-@use "@/assets/styles/_mixins.scss" as *;
-@use "@/assets/styles/_variables.scss" as *;
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;500;800&display=swap');
 
 .article-main {
-  min-width: 0;
-  font-size: 1.15rem;
-  line-height: 1.9;
-  color: var(--text-main);
-
   .lead {
-    font-size: 1.35rem;
+    font-size: 1.15rem;
     font-weight: 500;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     color: var(--text-main);
+    line-height: 1.6;
+    opacity: 0.8;
+    cursor: text;
+    /* 移动端字体 */
+    @media (max-width: 768px) {
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
   }
 
   .divider {
     width: 60px;
-    height: 4px;
+    height: 3px;
     background: var(--primary-color);
-    margin: 40px 0;
+    margin: 30px 0 50px;
+     
+    /* 移动端分隔线 */
+    @media (max-width: 768px) {
+      margin: 20px 0 30px;
+    }
+  }
+}
+
+.content-area {
+  position: relative;
+  min-height: 600px; // 保持高度占位
+}
+
+/* 骨架屏离场动画 (Vue Transition) --- */
+.fade-skeleton-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-skeleton-leave-to {
+  opacity: 0;
+}
+
+/* 正文进场动画 (CSS Class) --- */
+.viewer-container {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(5px);
+  transition:
+    opacity 1s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 1s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.8s ease;
+  will-change: transform, opacity;
+
+  &.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 
-  // Markdown 样式适配
-  :deep(.article-body) {
-
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-      color: var(--text-main);
-      font-weight: 700;
-      margin: 50px 0 25px;
-      line-height: 1.3;
-      scroll-margin-top: 100px;
-    }
-
-    h2 {
-      font-size: 2rem;
-    }
-
-    h3 {
-      font-size: 1.6rem;
-    }
-
-    h4 {
-      font-size: 1.3rem;
-    }
-
-    p {
-      margin-bottom: 25px;
-      color: var(--text-sub);
-    }
-
-    ul,
-    ol {
-      margin-bottom: 25px;
-      padding-left: 25px;
-      color: var(--text-sub);
-
-      li {
-        margin-bottom: 10px;
-
-        &::marker {
-          color: var(--primary-color);
-        }
-      }
-    }
-
-    blockquote {
-      border-left: 4px solid var(--primary-color);
-      padding-left: 25px;
-      font-style: italic;
-      font-size: 1.4rem;
-      margin: 40px 0;
-      font-family: $font-main;
-      color: var(--text-main);
-      background: rgba(128, 128, 128, 0.05);
-      padding: 20px 25px;
-      border-radius: 0 8px 8px 0;
-    }
-
-    // 代码块样式
-    pre {
-      background: #2d2d2d;
-      padding: 20px;
-      border-radius: 8px;
-      margin: 30px 0;
-      overflow-x: auto;
-      font-family: $font-mono;
-      font-size: 0.9rem;
-      line-height: 1.6;
-      border: 1px solid var(--border-light);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-
-      code {
-        background: transparent;
-        padding: 0;
-        color: #ccc;
-      }
-    }
-
-    // 行内代码
-    :not(pre)>code {
-      background: rgba(128, 128, 128, 0.15);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: $font-mono;
-      font-size: 0.9em;
-      color: var(--primary-color);
-    }
-
-    img {
-      max-width: 100%;
-      border-radius: 8px;
-      margin: 30px 0;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    }
-
-    a {
-      color: var(--primary-color);
-      text-decoration: none;
-      border-bottom: 1px solid transparent;
-      transition: border-color 0.3s;
-
-      &:hover {
-        border-bottom-color: var(--primary-color);
-      }
-    }
+  :deep(.vditor-reset) {
+    color: var(--text-main);
+    background-color: transparent;
+    padding: 0 !important;
+    min-height: 200px;
   }
 }
 
@@ -227,6 +182,14 @@ defineExpose({
   margin-top: 80px;
   padding-top: 40px;
   border-top: 1px solid var(--border-light);
-  margin-bottom: 40px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.6s ease;
+
+  &.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.2s;
+  }
 }
 </style>

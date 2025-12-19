@@ -1,39 +1,38 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { User } from '@/types'
-
-// 模拟初始用户列表
-const MOCK_USERS: User[] = [
-  {
-    id: 1,
-    name: 'Admin User',
-    email: 'admin@mindflow.com',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-    role: 'admin',
-    bookmarks: [1, 3, 5]
-  },
-  {
-    id: 2,
-    name: 'Sarah Jen',
-    email: 'sarah@example.com',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-    role: 'user',
-    bookmarks: [2]
-  },
-  {
-    id: 3,
-    name: 'Mike Ross',
-    email: 'mike@example.com',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike',
-    role: 'user',
-    bookmarks: []
-  }
-]
+import * as authApi from '@/api/auth'
 
 export const useAdminStore = defineStore('admin', () => {
-  const userList = ref<User[]>(MOCK_USERS)
+  const userList = ref<User[]>([])
+  const total = ref(0)
+  const currentPage = ref(1)
+  const pageSize = ref(30)
+  const isLoading = ref(false)
 
-  // 查找用户 (用于登录验证)
+  async function fetchUsers(page = 1, size = 30) {
+    isLoading.value = true
+    try {
+      const res = await authApi.getUserList({ page, page_size: size })
+      const list = res.useList || []
+
+      userList.value = list.map((u: any) => ({
+        ...u,
+        name: u.username || u.name || 'Unknown',
+        role: u.role || 'user'
+      }))
+
+      total.value = res.total
+      currentPage.value = page
+      pageSize.value = size
+    } catch (error) {
+      console.error('Failed to fetch users:', error)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 查找用户
   function findUserByUsername(username: string) {
     return userList.value.find(u => u.name.toLowerCase() === username.toLowerCase())
   }
@@ -42,31 +41,51 @@ export const useAdminStore = defineStore('admin', () => {
     return userList.value.find(u => u.role === 'admin')
   }
 
-  // 添加新用户 (注册)
+  // 添加新用户
   function addUser(user: User) {
-    userList.value.push(user)
+    userList.value.unshift(user)
   }
 
-  // 删除用户 (管理功能)
-  function deleteUser(id: number) {
-    const index = userList.value.findIndex(u => u.id === id)
-    if (index !== -1) {
-      userList.value.splice(index, 1)
+  // 删除用户
+  async function deleteUser(id: number) {
+    try {
+      await authApi.deleteUser(id)
+      await fetchUsers(currentPage.value, pageSize.value)
+      return true
+    } catch (error) {
+      console.error('Failed to delete user:', error)
+      throw error
     }
   }
 
-  // 更新用户 (管理功能 + 个人资料更新)
-  function updateUser(updatedUser: Partial<User>) {
-    const index = userList.value.findIndex(u => u.id === updatedUser.id)
-    if (index !== -1) {
-      userList.value[index] = { ...userList.value[index], ...updatedUser }
-      return userList.value[index] // 返回更新后的对象
+  // 更新用户
+  async function updateUser(updatedUser: Partial<User>) {
+    if (!updatedUser.id) return null
+
+    try {
+      await authApi.updateUser(updatedUser.id, {
+        user_name: updatedUser.name || '',
+        email: updatedUser.email || '',
+        role: updatedUser.role || 'user',
+        avatar: updatedUser.avatar || ''
+      })
+
+      // Refresh list
+      await fetchUsers(currentPage.value, pageSize.value)
+      return updatedUser
+    } catch (error) {
+      console.error('Failed to update user:', error)
+      throw error
     }
-    return null
   }
 
   return {
     userList,
+    total,
+    currentPage,
+    pageSize,
+    isLoading,
+    fetchUsers,
     findUserByUsername,
     findAdmin,
     addUser,

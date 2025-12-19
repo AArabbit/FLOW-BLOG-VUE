@@ -45,7 +45,6 @@ defineProps<{
   border-radius: 50%;
   border-style: solid;
   border-color: rgba(0, 0, 0, 0.1); // 底色
-  // 动态颜色由 style 绑定
   animation: spin 0.8s linear infinite;
 }
 

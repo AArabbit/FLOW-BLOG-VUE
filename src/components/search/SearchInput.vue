@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, nextTick } from 'vue'
+import { PhX } from "@phosphor-icons/vue";
 
 const props = defineProps<{
   modelValue: string
@@ -25,13 +26,13 @@ defineExpose({ focusInput })
 <template>
   <div class="search-header">
     <button class="close-btn" @click="emit('close')">
-      <i class="ph ph-x"></i>
+      <PhX />
     </button>
 
     <div class="input-wrapper">
       <input ref="inputRef" :value="modelValue"
-        @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)" type="text"
-        placeholder="Type to search..." class="search-input" />
+        @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)" type="text" placeholder="搜索..."
+        class="search-input" />
     </div>
   </div>
 </template>

@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 import { useAuthStore } from './auth'
-import { useAdminStore } from './admin'
 import { useUIStore } from './ui'
 import { message } from '@/utils/discreteApi'
+import { addBookmark, deleteBookmark } from '@/api/bookmark'
 
 export const useBookmarkStore = defineStore('bookmarks', () => {
   // 记录正在加载收藏的文章ID
@@ -11,12 +11,11 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
 
   // 引入其他 Store
   const authStore = useAuthStore()
-  const adminStore = useAdminStore()
   const uiStore = useUIStore()
 
   // 判断是否收藏
   const isBookmarked = (postId: number) => {
-    return authStore.user?.bookmarks.includes(postId) || false
+    return authStore.user?.bookmarks?.includes(postId) || false
   }
 
   // 判断是否正在加载
@@ -34,30 +33,48 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     // 设置 Loading
     loadingBookmarks.add(postId)
 
-    // 模拟 API 延迟
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    // 更新数据
-    const index = authStore.user.bookmarks.indexOf(postId)
+    const isCurrentlyBookmarked = isBookmarked(postId)
     let isAdded = false
 
-    if (index > -1) {
-      authStore.user.bookmarks.splice(index, 1)
-      message.info('已取消收藏')
-    } else {
-      authStore.user.bookmarks.push(postId)
-      message.success('收藏成功')
-      isAdded = true
+    try {
+      if (isCurrentlyBookmarked) {
+        // 取消收藏
+        await deleteBookmark({
+          user_id: authStore.user.id,
+          post_id: postId
+        })
+        // 从本地列表中移除
+        if (authStore.user.bookmarks) {
+          const index = authStore.user.bookmarks.indexOf(postId)
+          if (index > -1) {
+            authStore.user.bookmarks.splice(index, 1)
+          }
+        }
+        message.info('已取消收藏')
+      } else {
+        // 添加收藏
+        await addBookmark({
+          user_id: authStore.user.id,
+          post_id: postId
+        })
+        // 添加到本地列表
+        if (!authStore.user.bookmarks) {
+          authStore.user.bookmarks = []
+        }
+        authStore.user.bookmarks.push(postId)
+        message.success('收藏成功')
+        isAdded = true
+      }
+
+      // 同步持久化
+      authStore.persistUserSession()
+    } catch (error) {
+      console.error('Failed to toggle bookmark:', error)
+      message.error(isCurrentlyBookmarked ? '取消收藏失败' : '收藏失败')
+    } finally {
+      // 移除 Loading
+      loadingBookmarks.delete(postId)
     }
-
-    // 同步持久化 (调用 Auth Store 的方法)
-    authStore.persistUserSession()
-
-    // 同步到 Admin Store (后端数据库)
-    adminStore.updateUser({ id: authStore.user.id, bookmarks: authStore.user.bookmarks })
-
-    // 移除 Loading
-    loadingBookmarks.delete(postId)
 
     return isAdded
   }
@@ -68,3 +85,4 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     toggleBookmark
   }
 })
+

@@ -7,7 +7,6 @@ export const useThemeStore = defineStore('theme', () => {
   const searchOpen = ref(false)
 
   // 缓存视图白名单
-  // 初始为空，或者包含 'HomeView' 也没关系，路由守卫会自动管理
   const cachedViews = ref<string[]>([])
 
   const isDark = ref(
@@ -59,11 +58,11 @@ export const useThemeStore = defineStore('theme', () => {
     themeColor,
     searchOpen,
     isDark,
-    cachedViews, 
+    cachedViews,
     setThemeColor,
     toggleSearch,
     toggleDarkMode,
-    addCachedView,    
-    removeCachedView  
+    addCachedView,
+    removeCachedView
   }
 })

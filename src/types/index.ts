@@ -4,7 +4,7 @@ export interface Category {
   slug: string
 }
 
-// 文章类型
+
 export interface Post {
   id: number
   title: string
@@ -16,16 +16,25 @@ export interface Post {
   cover: string
   codeSnippet?: string
   content?: string
+  category_id?: number
+  user_id?: number
+  author?: User
+  is_curated?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
-// 修改 User 接口
+
 export interface User {
   id: number
   name: string
+  username?: string
   email: string
   avatar: string
   role: 'admin' | 'user'
-  bookmarks: number[]
+  bookmarks?: number[]
+  created_at?: string
+  updated_at?: string
 }
 
 export interface GroupedPosts {

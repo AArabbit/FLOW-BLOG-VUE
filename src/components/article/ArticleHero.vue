@@ -1,35 +1,43 @@
 <script setup lang="ts">
 // import { defineProps } from 'vue'
-import { NTag, NButton } from 'naive-ui'
 import { useBookmarkStore } from '@/stores/bookmarks'
+import { useAuthStore } from '@/stores/auth'
 import type { Post } from '@/types'
+import { NButton } from 'naive-ui';
+import { PhEye, PhHeart } from "@phosphor-icons/vue";
 
 const props = defineProps<{
   post: Post
 }>()
 
 const bookmarkStore = useBookmarkStore()
+const authStore = useAuthStore()
 </script>
 
 <template>
   <div class="article-hero">
     <div class="hero-content">
       <div class="article-meta">
-        <n-tag round :bordered="false" type="primary" size="small" class="cat-tag">
-          {{ post.category.name }}
-        </n-tag>
+        <span class="cat-tag">{{ post.category.name }}</span>
         <span class="date">{{ post.date }}</span>
-        <span class="views"><i class="ph ph-eye"></i> {{ post.views }}</span>
+        <span class="views">
+          <PhEye /> {{ post.views }}
+        </span>
+        <div v-if="post.author" class="author-info">
+          <img :src="post.author.avatar" class="author-avatar" alt="avatar" />
+          <span class="author-name">{{ post.author.username }}</span>
+        </div>
       </div>
 
       <h1 class="article-title">{{ post.title }}</h1>
 
       <div class="article-actions">
-        <n-button class="hero-action-btn" round secondary size="medium" @click="bookmarkStore.toggleBookmark(post.id)"
+        <n-button v-if="authStore.user" class="hero-action-btn" round secondary size="medium"
+          @click="bookmarkStore.toggleBookmark(post.id)"
           :type="bookmarkStore.isBookmarked(post.id) ? 'error' : 'default'"
           :loading="bookmarkStore.isBookmarkLoading(post.id)">
           <template #icon>
-            <i :class="bookmarkStore.isBookmarked(post.id) ? 'ph-fill ph-heart' : 'ph ph-heart'"></i>
+            <PhHeart :weight="bookmarkStore.isBookmarked(post.id) ? 'fill' : 'regular'" />
           </template>
           {{ bookmarkStore.isBookmarked(post.id) ? '已收藏' : '收藏文章' }}
         </n-button>
@@ -54,7 +62,8 @@ const bookmarkStore = useBookmarkStore()
   padding: 0 5vw 60px;
   color: #fff;
   background: var(--card-bg);
-  margin-top: 80px;
+  // margin-top: 80px;
+  margin-top: 0;
   overflow: hidden;
 }
 
@@ -86,11 +95,46 @@ const bookmarkStore = useBookmarkStore()
   margin-bottom: 20px;
   color: rgba(255, 255, 255, 0.9);
 
+  .cat-tag {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: text;
+  }
+
   .date,
   .views {
     font-family: $font-main;
     font-size: 0.9rem;
     opacity: 0.8;
+    cursor: text;
+  }
+
+  .author-info {
+    @include flex(flex-start, center);
+    gap: 8px;
+    // margin-left: auto;
+    opacity: 0.9;
+
+    .author-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .author-name {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.9);
+      cursor: text;
+    }
   }
 }
 
@@ -99,6 +143,7 @@ const bookmarkStore = useBookmarkStore()
   line-height: 1.1;
   font-weight: 700;
   color: #ffffff;
+  cursor: text;
 }
 
 .article-actions {
@@ -107,9 +152,8 @@ const bookmarkStore = useBookmarkStore()
 
 // 强制覆盖按钮颜色
 .hero-action-btn {
-  background-color: transparent; // 确保背景透明
+  background-color: transparent;
 
-  // 默认状态 (未收藏) - 强制白色
   &.n-button--default-type {
     --n-text-color: #ffffff !important;
     --n-border: 1px solid rgba(255, 255, 255, 0.6) !important;
@@ -122,9 +166,7 @@ const bookmarkStore = useBookmarkStore()
     --n-icon-color: #ffffff !important;
   }
 
-  // 已收藏状态 (Error类型) - 提升亮度
   &.n-button--error-type {
-    // 使用亮红色，防止在深色背景上看不清
     --n-text-color: #ff8080 !important;
     --n-border: 1px solid #ff8080 !important;
     --n-text-color-hover: #ff9999 !important;

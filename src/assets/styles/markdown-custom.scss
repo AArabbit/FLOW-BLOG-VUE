@@ -1,0 +1,488 @@
+/* ==========================================================================
+   1. 基础主题引入
+   ========================================================================== */
+/* 引入掘金主题 (基础排版) */
+@import 'juejin-markdown-themes/dist/juejin.min.css';
+@import 'highlight.js/styles/github.css';
+
+/* ==========================================================================
+   2. 样式覆盖与增强 (Markdown Body)
+   ========================================================================== */
+.markdown-body {
+
+  // 重置基础样式
+  * {
+    box-sizing: border-box;
+  }
+
+  // 全局字号与颜色优化
+  font-family: -apple-system,
+  system-ui,
+  "Segoe UI",
+  Roboto,
+  Helvetica,
+  Arial,
+  sans-serif;
+  font-size: 16px !important;
+  line-height: 1.75 !important;
+  color: var(--text-main) !important;
+  background-color: transparent !important;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  blockquote,
+  li,
+  dt,
+  dd,
+  th,
+  td,
+  pre,
+  code,
+  figcaption {
+    cursor: text;
+  }
+
+  br {
+    cursor: default;
+  }
+
+  // --------------------------------------------------------------------------
+  // 标题样式
+  // --------------------------------------------------------------------------
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--text-main) !important;
+    font-weight: 600 !important;
+  }
+
+  h1 {
+    font-size: 2em;
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+  }
+
+  h2 {
+    font-size: 1.5em;
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    border-bottom: none !important;
+  }
+
+  h3 {
+    font-size: 1.25em;
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+  }
+
+  p {
+    margin-bottom: 1.2em;
+  }
+
+  // --------------------------------------------------------------------------
+  // 行内代码 (Inline Code) e.g. `npm install`
+  // --------------------------------------------------------------------------
+  code:not(pre code) {
+    color: #d63384 !important;
+    background-color: var(--border-light) !important;
+    padding: 0.2em 0.4em !important;
+    margin: 0 0.2em !important;
+    border-radius: 3px !important;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace !important;
+    font-size: 0.9em !important;
+  }
+
+  // --------------------------------------------------------------------------
+  // 代码块容器 (Pre)
+  // --------------------------------------------------------------------------
+  pre {
+    background: var(--code-block-bg) !important;
+    border: 1px solid var(--border-light) !important;
+
+    border-radius: 6px !important;
+    padding: 16px !important;
+    overflow-x: auto !important;
+    margin: 0 0 16px 0 !important;
+    cursor: text;
+
+    // 代码块内的文字
+    code {
+      color: inherit;
+
+      background: transparent !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      font-size: 13px !important;
+      line-height: 1.5 !important;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace !important;
+      cursor: text;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 你的插件：代码块增强容器 (Code Block Enhancer)
+  // --------------------------------------------------------------------------
+  .code-block-wrapper {
+    margin: 20px 0;
+    border-radius: 6px;
+    background: var(--code-block-bg); 
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: default; 
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    &.collapsed {
+      .code-block-header {
+        border-bottom: none;
+      }
+
+      .code-block-body {
+        display: none;
+      }
+    }
+  }
+
+  // 代码块头部
+  .code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 16px;
+    background: var(--code-block-bg);
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px;
+    user-select: none;
+    cursor: default;
+
+    .code-lang {
+      color: var(--text-sub);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .code-actions {
+      display: flex;
+      gap: 12px;
+
+      .action-btn {
+        cursor: pointer;
+        color: var(--text-sub);
+        transition: color 0.2s;
+
+        &:hover {
+          color: #1e80ff;
+        }
+      }
+    }
+  }
+
+  // 代码主体区域
+  .code-block-body {
+    display: flex;
+    position: relative;
+    background: var(--code-block-bg);
+
+    // 行号区
+    .line-numbers {
+      padding: 16px 0;
+      text-align: right;
+      min-width: 40px;
+      color: var(--text-sub);
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-size: 13px !important;
+      line-height: 1.5 !important;
+      user-select: none;
+      border-right: 1px solid var(--border-light); 
+      background-color: var(--code-block-bg); 
+      cursor: default;
+
+      span {
+        display: block;
+        padding-right: 12px;
+      }
+    }
+
+    // 代码区
+    pre {
+      flex: 1;
+      margin: 0 !important;
+      padding: 16px !important;
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      overflow-x: auto;
+      white-space: pre;
+      cursor: text !important;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 其他元素 (链接、引用、表格、列表)
+  // --------------------------------------------------------------------------
+
+  // 链接
+  a {
+    color: #457b9d;
+    text-decoration: none;
+    cursor: pointer !important;
+
+    &:hover {
+      color: #457b9d;
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+  }
+
+  // 块引用
+  blockquote {
+    color: var(--text-sub) !important; 
+    border-left: 4px solid var(--border-light) !important;
+    padding: 0 15px !important;
+    margin: 0 0 16px 0 !important;
+
+    p {
+      margin: 0 !important;
+    }
+  }
+
+  // 表格
+  table {
+    border-collapse: collapse;
+    margin: 16px 0;
+    background: transparent;
+
+    tr {
+      border-top: 1px solid var(--border-light); 
+      background-color: transparent;
+
+      &:nth-child(2n) {
+        background-color: var(--border-light);
+      }
+    }
+
+    th,
+    td {
+      padding: 12px 13px;
+      border: 1px solid var(--border-light); 
+      color: var(--text-main); 
+    }
+
+    th {
+      background: var(--border-light); 
+      font-weight: 600;
+    }
+  }
+
+  // 列表
+  ul,
+  ol {
+    padding-left: 2em !important;
+    margin-bottom: 16px !important;
+    list-style: inherit !important;
+
+    li {
+      margin-bottom: 0.5em;
+      color: var(--text-main); 
+      list-style: inherit !important;
+    }
+  }
+
+  ul {
+    list-style-type: disc !important;
+
+    ul {
+      list-style-type: circle !important;
+
+      ul {
+        list-style-type: square !important;
+      }
+    }
+  }
+
+  ol {
+    list-style-type: decimal !important;
+  }
+
+  // 强调
+  strong,
+  b {
+    font-weight: 600;
+    color: var(--text-main); 
+  }
+
+  em,
+  i {
+    font-style: italic;
+  }
+
+  // 分割线
+  hr {
+    height: 1px;
+    padding: 0;
+    margin: 24px 0;
+    background-color: var(--border-light); 
+    border: 0;
+  }
+}
+
+/* ==========================================================================
+    模拟 GitHub Dark
+   ========================================================================== */
+html.dark .markdown-body {
+  // 覆盖基础颜色
+  color: var(--text-main);
+  pre code {
+    color: #c9d1d9; // 基础文字颜色
+
+    .hljs-comment,
+    .hljs-quote {
+      color: #8b949e; // 注释 (灰)
+    }
+
+    .hljs-doctag,
+    .hljs-keyword,
+    .hljs-formula {
+      color: #ff7b72; // 关键字 (红)
+    }
+
+    .hljs-section,
+    .hljs-name,
+    .hljs-selector-tag,
+    .hljs-deletion,
+    .hljs-subst {
+      color: #ff7b72; // 标签 (红)
+    }
+
+    .hljs-literal {
+      color: #79c0ff; // 字面量 (蓝)
+    }
+
+    .hljs-string,
+    .hljs-regexp,
+    .hljs-addition,
+    .hljs-attribute,
+    .hljs-meta .hljs-string {
+      color: #a5d6ff; // 字符串 (浅蓝)
+    }
+
+    .hljs-class .hljs-title,
+    .hljs-title.class_ {
+      color: #f0883e; // 类名 (橙)
+    }
+
+    .hljs-function .hljs-title,
+    .hljs-title.function_ {
+      color: #d2a8ff; // 函数名 (紫)
+    }
+
+    .hljs-attr,
+    .hljs-variable,
+    .hljs-template-variable,
+    .hljs-type,
+    .hljs-selector-class,
+    .hljs-selector-attr,
+    .hljs-selector-pseudo,
+    .hljs-number {
+      color: #79c0ff; // 变量/数字 (蓝)
+    }
+
+    .hljs-symbol,
+    .hljs-bullet,
+    .hljs-link,
+    .hljs-meta,
+    .hljs-selector-id,
+    .hljs-title {
+      color: #d2a8ff; // 符号/ID (紫)
+    }
+
+    .hljs-built_in,
+    .hljs-title.class_,
+    .hljs-class .hljs-title {
+      color: #f0883e; // 内置对象 (橙)
+    }
+
+    .hljs-emphasis {
+      font-style: italic;
+    }
+
+    .hljs-strong {
+      font-weight: bold;
+    }
+  }
+}
+
+/* ==========================================================================
+   3. 移动端适配 (Mobile Responsiveness)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .markdown-body {
+    // 调整基础字号和行高
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+    
+    // 移除多余的内边距
+    padding: 0 4px !important; 
+
+    // 调整标题大小
+    h1 { font-size: 1.6em !important; margin-top: 1.2em !important; }
+    h2 { font-size: 1.35em !important; margin-top: 1.1em !important; }
+    h3 { font-size: 1.15em !important; }
+    
+    // 段落间距
+    p { margin-bottom: 1em !important; }
+
+    // 列表缩进
+    ul, ol {
+      padding-left: 1.2em !important;
+    }
+
+    // 代码块调整
+    pre {
+      padding: 12px !important;
+      margin: 12px 0 !important;
+      
+      code {
+        font-size: 13px !important; // 改小代码字体
+      }
+    }
+    
+    // 引用块
+    blockquote {
+      padding: 0 10px !important;
+      margin: 0 0 12px 0 !important;
+    }
+
+    // 图片自适应
+    img {
+      max-width: 100% !important;
+      height: auto !important;
+      border-radius: 4px;
+    }
+    
+    // 强制表格滚动
+    table {
+      display: block !important;
+      width: 100% !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch; // iOS 平滑滚动
+      font-size: 13px !important; // 表格文字稍微改小
+    }
+  }
+  
+  // Vditor特有的重置类
+  .vditor-reset {
+    padding: 0 !important; // 移除Vditor自带的内边距
+  }
+}

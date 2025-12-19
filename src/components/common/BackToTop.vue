@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, inject, Ref } from 'vue'
 import gsap from 'gsap'
 import { useThemeStore } from '@/stores/theme'
+import { PhArrowUp } from "@phosphor-icons/vue";
+import Lenis from 'lenis';
 
 const themeStore = useThemeStore()
 const isVisible = ref(false)
 const btnRef = ref<HTMLElement | null>(null)
+
+const globalLenis = inject<Ref<Lenis | null> >('globalLenis')
 
 const handleScroll = () => {
   const scrollTop = window.scrollY || document.documentElement.scrollTop
@@ -22,7 +26,9 @@ const handleScroll = () => {
 }
 
 const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  if (globalLenis?.value) {
+     globalLenis.value.scrollTo("top")
+  }
 }
 
 onMounted(() => {
@@ -38,7 +44,7 @@ onUnmounted(() => {
 
 <template>
   <button ref="btnRef" class="back-to-top" :style="{ backgroundColor: themeStore.themeColor }" @click="scrollToTop">
-    <i class="ph ph-arrow-up"></i>
+    <PhArrowUp />
 
     <div class="glow"></div>
   </button>

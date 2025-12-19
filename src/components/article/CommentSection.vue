@@ -1,52 +1,100 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useMessage } from 'naive-ui' // 引入组件内消息 Hook
+import { useMessage } from 'naive-ui'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
-// 引入拆分后的子组件
+import { getComments, addComment, deleteComment, type Comment } from '@/api/comment'
+import { useUIStore } from '@/stores/ui'
 import CommentInput from './comment/CommentInput.vue'
 import CommentList from './comment/CommentList.vue'
 
 const props = defineProps<{ postId: number }>()
 const authStore = useAuthStore()
-const themeStore = useThemeStore()
+const uiStore = useUIStore()
 const message = useMessage() // 初始化消息实例
+
+// 评论项的前端格式
+interface CommentItem {
+  id: number
+  user: string
+  avatar: string
+  content: string
+  date: Date
+}
 
 // 状态管理
 const isFetching = ref(true)
 const isSubmitting = ref(false)
-const comments = ref<any[]>([])
+const comments = ref<CommentItem[]>([])
 
-// 获取评论列表 (模拟)
+// 获取评论列表
 const fetchComments = async () => {
   isFetching.value = true
-  await new Promise(resolve => setTimeout(resolve, 1500))
-
-  comments.value = [
-    { id: 1, user: 'Sarah Jen', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah', content: '非常深刻的见解，特别是关于 GSAP 动画性能优化的部分，对我启发很大！', date: new Date(Date.now() - 86400000) },
-    { id: 2, user: 'Mike Ross', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike', content: '期待下一篇关于 WebGL 的文章。', date: new Date(Date.now() - 172800000) }
-  ]
-  isFetching.value = false
+  try {
+    const res = await getComments({ posts_id: props.postId })
+    // 转换后端数据为前端格式
+    comments.value = res.comments.map((c: Comment) => ({
+      id: c.id,
+      user: c.user_name,
+      avatar: c.avatar,
+      content: c.content,
+      date: new Date(c.created_at)
+    }))
+  } catch (error) {
+    console.error('Failed to fetch comments:', error)
+    comments.value = []
+  } finally {
+    isFetching.value = false
+  }
 }
 
 // 提交评论逻辑
 const handleNewComment = async (content: string) => {
-  isSubmitting.value = true
-  await new Promise(resolve => setTimeout(resolve, 1000))
-
-  const comment = {
-    id: Date.now(),
-    user: authStore.user?.name || 'User',
-    avatar: authStore.user?.avatar || '',
-    content: content,
-    date: new Date()
+  // 检查登录状态
+  if (!authStore.user) {
+    uiStore.toggleLoginModal(true)
+    message.warning('请先登录后再发表评论')
+    return
   }
 
-  comments.value.unshift(comment)
-  isSubmitting.value = false
+  isSubmitting.value = true
+  try {
+    await addComment({
+      post_id: props.postId,
+      user_id: authStore.user.id,
+      user_name: authStore.user.name,
+      avatar: authStore.user.avatar,
+      content: content
+    })
 
-  // 成功提示
-  message.success('评论发布成功！')
+    const comment: CommentItem = {
+      id: Date.now(),
+      user: authStore.user.name,
+      avatar: authStore.user.avatar,
+      content: content,
+      date: new Date()
+    }
+    comments.value.unshift(comment)
+
+    message.success('评论发布成功！')
+  } catch (error) {
+    console.error('Failed to add comment:', error)
+    message.error('评论发布失败，请重试')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// 删除评论逻辑
+const handleDeleteComment = async (commentId: number) => {
+  try {
+    await deleteComment({ comment_id: commentId })
+    message.success('评论已删除')
+    // 重新获取评论列表
+    await fetchComments()
+  } catch (error) {
+    console.error('Failed to delete comment:', error)
+    message.error('删除评论失败，请重试')
+  }
 }
 
 onMounted(() => {
@@ -63,7 +111,8 @@ onMounted(() => {
 
     <CommentInput :is-submitting="isSubmitting" @submit="handleNewComment" />
 
-    <CommentList :comments="comments" :loading="isFetching" />
+    <CommentList :comments="comments" :loading="isFetching" :current-user="authStore.user"
+      @delete="handleDeleteComment" />
   </div>
 </template>
 
@@ -75,7 +124,7 @@ onMounted(() => {
   max-width: 800px;
   margin: 0 auto;
   padding-top: 60px;
-  border-top: 1px solid var(--border-light);
+  // border-top: 1px solid var(--border-light);
 }
 
 .header {

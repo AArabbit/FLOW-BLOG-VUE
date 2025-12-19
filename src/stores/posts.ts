@@ -1,34 +1,66 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { generatePosts, CATEGORIES } from '@/utils/mock'
-import type { Post, Category, GroupedPosts } from '@/types'
+import { computed } from 'vue'
+import type { GroupedPosts, Post } from '@/types'
+import { createPostsDataState, fetchCategories as dataFetchCategories } from './modules/posts-data'
+import { createPostsListActions } from './modules/posts-list'
+import { createPostsAdminActions } from './modules/posts-admin'
+import { createPostsDetailActions } from './modules/posts-detail'
+import { createPostsEditActions } from './modules/posts-edit'
 
-interface FetchParams {
-  page: number
-  pageSize: number
-  categoryId?: number
-  ids?: number[]
-  keyword?: string
-}
-
-interface FetchResult {
-  list: Post[]
-  total: number
-  hasMore: boolean
-}
-
+/**
+ * 文章 Store - 整合所有文章相关的逻辑
+ */
 export const usePostStore = defineStore('posts', () => {
-  // 模拟数据库
-  const allPosts = ref<Post[]>(generatePosts(100))
-  const categories = ref<Category[]>(CATEGORIES)
+  // 共享数据状态
+  const { 
+    allPosts, 
+    categories 
+  } = createPostsDataState()
 
-  // 同步获取 (保留用于其他非异步场景)
-  const getPostById = (id: number) => allPosts.value.find(p => p.id === id)
+  // 列表查询相关
+  const { 
+    fetchPosts, 
+    getPostsByCategory, 
+    getPostById 
+  } = createPostsListActions(allPosts, categories)
 
-  const getPostsByCategory = (categoryId: number) => {
-    return allPosts.value.filter(p => p.category.id === categoryId)
+  // 管理端相关
+  const { 
+    adminPosts, 
+    adminTotal, 
+    adminPage, 
+    adminPageSize, 
+    fetchAdminPosts 
+  } = createPostsAdminActions(categories)
+
+  // 文章详情相关
+  const { fetchPostDetail } = createPostsDetailActions(allPosts, categories)
+
+  // 文章编辑相关
+  const { 
+    deletePost, 
+    savePost: savePostImpl,
+    saveDraftContent,
+    loadDraft,
+    hasDraftAvailable,
+    clearDraftMark
+  } = createPostsEditActions(
+    allPosts,
+    adminPage,
+    adminPageSize,
+    fetchAdminPosts
+  )
+
+  /**
+   * 包装 savePost，添加分类信息
+   */
+  async function savePost(post: Partial<Post>) {
+    await savePostImpl(post, categories.value)
   }
 
+  /**
+   * 获取按年份分组的文章列表
+   */
   const postsGroupedByYear = computed<GroupedPosts>(() => {
     const groups: GroupedPosts = {}
     allPosts.value.forEach(post => {
@@ -39,73 +71,52 @@ export const usePostStore = defineStore('posts', () => {
     return groups
   })
 
-  // 分页列表查询
-  const fetchPosts = async (params: FetchParams): Promise<FetchResult> => {
-    await new Promise(resolve => setTimeout(resolve, 800))
-    let filtered = allPosts.value
-    if (params.categoryId) filtered = filtered.filter(p => p.category.id === params.categoryId)
-    if (params.ids && params.ids.length > 0) filtered = filtered.filter(p => params.ids!.includes(p.id))
-    else if (params.ids && params.ids.length === 0) return { list: [], total: 0, hasMore: false }
-    if (params.keyword) {
-      const q = params.keyword.toLowerCase()
-      filtered = filtered.filter(p => p.title.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q))
-    }
-    const total = filtered.length
-    const start = (params.page - 1) * params.pageSize
-    const end = start + params.pageSize
-    const list = filtered.slice(start, end)
-    return { list, total, hasMore: end < total }
-  }
-
-  // 模拟获取文章详情的异步接口
-  const fetchPostDetail = async (id: number): Promise<Post | undefined> => {
-    // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    // 模拟数据库查询
-    const post = allPosts.value.find(p => p.id === id)
-    return post
-  }
-
+  /**
+   * 获取时间线文章（按年份分组）
+   */
   const fetchTimelinePosts = async (): Promise<GroupedPosts> => {
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    if (allPosts.value.length === 0) {
+      await fetchPosts({ page: 1, pageSize: 100 })
+    }
     return postsGroupedByYear.value
   }
 
-  function deletePost(id: number) {
-    const index = allPosts.value.findIndex(p => p.id === id)
-    if (index !== -1) allPosts.value.splice(index, 1)
-  }
-
-  function savePost(post: Partial<Post>) {
-    if (post.id) {
-      const index = allPosts.value.findIndex(p => p.id === post.id)
-      if (index !== -1) allPosts.value[index] = { ...allPosts.value[index], ...post } as Post
-    } else {
-      const newPost: Post = {
-        id: Date.now(),
-        title: post.title || '无标题',
-        desc: post.desc || '',
-        date: new Date().toISOString().split('T')[0],
-        category: post.category || categories.value[0],
-        readTime: 5,
-        views: 0,
-        cover: post.cover || `https://picsum.photos/seed/${Date.now()}/800/500`,
-        ...post
-      } as Post
-      allPosts.value.unshift(newPost)
-    }
+  /**
+   * 获取分类列表
+   */
+  const fetchCategories = async () => {
+    await dataFetchCategories(categories)
   }
 
   return {
+    // 数据状态
     posts: allPosts,
+    adminPosts,
+    adminTotal,
+    adminPage,
+    adminPageSize,
     categories,
     postsGroupedByYear,
+
+    // 列表查询
+    fetchPosts,
     getPostById,
     getPostsByCategory,
-    fetchPosts,
+
+    // 详情查询
     fetchPostDetail,
     fetchTimelinePosts,
+
+    // 管理端操作
+    fetchAdminPosts,
     deletePost,
-    savePost
+    savePost,
+    saveDraftContent,
+    loadDraft,
+    hasDraftAvailable,
+    clearDraftMark,
+
+    // 其他
+    fetchCategories
   }
 })

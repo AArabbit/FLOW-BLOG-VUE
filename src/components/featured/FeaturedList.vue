@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
+import { useArticleModalStore } from '@/stores/articleModal'
 import type { Post } from '@/types'
+import { PhArrowUpRight } from "@phosphor-icons/vue";
 
 // 接收父组件传入的文章列表
 const props = defineProps<{
   posts: Post[]
 }>()
 
-// 定义向父组件发射的事件
+// 向父组件发射事件
 const emit = defineEmits<{
   (e: 'item-hover', post: Post): void
   (e: 'item-leave'): void
@@ -16,28 +18,32 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const themeStore = useThemeStore()
+const articleModalStore = useArticleModalStore()
 
-// 鼠标移入列表项，通知父组件显示预览框
 const handleMouseEnter = (post: Post) => {
   emit('item-hover', post)
 }
 
-// 鼠标移出，通知父组件隐藏预览框
+// 鼠标移出
 const handleMouseLeave = () => {
   emit('item-leave')
+}
+
+const goToArticle = (id: number) => {
+   articleModalStore.open(id)
 }
 </script>
 
 <template>
   <section class="list-section">
     <div class="list-header">
-      <h2>编辑精选</h2>
+      <h2>精选文章</h2>
       <p>Editor's Choice</p>
     </div>
 
     <div class="editorial-list">
       <div v-for="(post, index) in posts" :key="post.id" class="list-row" @mouseenter="handleMouseEnter(post)"
-        @mouseleave="handleMouseLeave" @click="router.push(`/article/${post.id}`)">
+        @mouseleave="handleMouseLeave" @click="goToArticle(post.id)">
         <div class="row-index">0{{ index + 1 }}</div>
         <div class="row-info">
           <h3 class="row-title">{{ post.title }}</h3>
@@ -45,7 +51,7 @@ const handleMouseLeave = () => {
         </div>
         <div class="row-date">{{ post.date.substring(5) }}</div>
         <div class="row-arrow" :style="{ color: themeStore.themeColor }">
-          <i class="ph ph-arrow-up-right"></i>
+          <PhArrowUpRight/>
         </div>
       </div>
     </div>
@@ -91,8 +97,6 @@ const handleMouseLeave = () => {
   cursor: pointer;
   position: relative;
   background: transparent;
-
-  // 只对特定属性做过渡，避免干扰 JS 动画
   transition: padding-left 0.3s ease, background-color 0.3s ease;
 
   &:hover {

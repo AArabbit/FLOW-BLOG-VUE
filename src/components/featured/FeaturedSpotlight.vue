@@ -1,8 +1,9 @@
 <script setup lang="ts">
-// import { defineProps } from 'vue'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
-import type { Post } from '@/types' // 确保你有 Post 类型定义
+import { useArticleModalStore } from '@/stores/articleModal'
+import type { Post } from '@/types'
+import { PhArrowRight } from "@phosphor-icons/vue";
 
 const props = defineProps<{
   post: Post
@@ -10,10 +11,15 @@ const props = defineProps<{
 
 const router = useRouter()
 const themeStore = useThemeStore()
+const articleModalStore = useArticleModalStore()
+
+const handleOpenPost = (post: Post) => {
+  articleModalStore.open(post.id)
+}
 </script>
 
 <template>
-  <section class="spotlight-section" @click="router.push(`/article/${post.id}`)">
+  <section class="spotlight-section" @click="handleOpenPost(post)">
     <div class="spotlight-wrapper">
       <div class="spotlight-image-box">
         <img :src="post.cover" class="spotlight-img" alt="Hero" />
@@ -30,7 +36,7 @@ const themeStore = useThemeStore()
         <h1 class="spotlight-title">{{ post.title }}</h1>
         <p class="spotlight-desc">{{ post.desc }}</p>
         <div class="read-btn" :style="{ color: themeStore.themeColor }">
-          阅读全文 <i class="ph ph-arrow-right"></i>
+          阅读全文 <PhArrowRight />
         </div>
       </div>
     </div>

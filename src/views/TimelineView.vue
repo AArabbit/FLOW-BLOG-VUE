@@ -1,45 +1,133 @@
 <script setup lang="ts">
-import { onMounted, nextTick, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, nextTick, ref, computed, onUnmounted } from 'vue'
 import { NTag } from 'naive-ui'
 import gsap from 'gsap'
 import ScrollTrigger from 'gsap/ScrollTrigger'
 import { usePostStore } from '@/stores/posts'
 import { useThemeStore } from '@/stores/theme'
+import { useArticleModalStore } from '@/stores/articleModal'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import type { Post } from '@/types'
 
-// 必须声明组件名称，供 KeepAlive 缓存使用
 defineOptions({ name: 'TimelineView' })
 
 gsap.registerPlugin(ScrollTrigger)
 
 const postStore = usePostStore()
 const themeStore = useThemeStore()
-const router = useRouter()
-const isLoading = ref(true)
+const articleModalStore = useArticleModalStore()
 
-// 数据结构
-const timelineData = ref<{ year: string, posts: any[] }[]>([])
+// 状态管理
+const isLoading = ref(true)
+const isLoadingMore = ref(false)
+const hasMore = ref(true)
+const currentPage = ref(1)
+const postList = ref<Post[]>([])
+
+// 观察器
+let observer: IntersectionObserver | null = null
+const loadingTrigger = ref<HTMLElement | null>(null)
+
+const handleOpenPost = (id: number) => {
+  articleModalStore.open(id)
+}
+
+// 计算属性：按年份分组
+const timelineData = computed(() => {
+  const grouped: Record<string, Post[]> = {}
+  postList.value.forEach(post => {
+    const year = post.date.substring(0, 4)
+    if (!grouped[year]) {
+      grouped[year] = []
+    }
+    grouped[year].push(post)
+  })
+
+  // 按年份倒序排序
+  return Object.keys(grouped)
+    .sort((a, b) => Number(b) - Number(a))
+    .map(year => ({
+      year,
+      posts: grouped[year]
+    }))
+})
+
+// 加载数据
+const loadPosts = async (page: number, isInitial = false) => {
+  if (isInitial) {
+    isLoading.value = true
+  } else {
+    isLoadingMore.value = true
+  }
+
+  try {
+    const res = await postStore.fetchPosts({
+      page,
+      pageSize: 12
+    })
+
+    if (res.list && res.list.length > 0) {
+      if (isInitial) {
+        postList.value = res.list
+      } else {
+        // 去重添加
+        const existingIds = new Set(postList.value.map(p => p.id))
+        const newPosts = res.list.filter(p => !existingIds.has(p.id))
+        postList.value.push(...newPosts)
+      }
+      hasMore.value = res.hasMore
+      // 如果还有更多数据，页码+1
+      if (res.hasMore) {
+        currentPage.value++
+      }
+    } else {
+      hasMore.value = false
+    }
+  } catch (error) {
+    console.error('Failed to load timeline posts:', error)
+  } finally {
+    isLoading.value = false
+    isLoadingMore.value = false
+
+    // 数据更新后刷新动画配置
+    nextTick(() => {
+      ScrollTrigger.refresh()
+      if (isInitial) {
+        initAnimations()
+      }
+    })
+  }
+}
+
+// 初始化观察器
+const initObserver = () => {
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && hasMore.value && !isLoading.value && !isLoadingMore.value) {
+      loadPosts(currentPage.value)
+    }
+  }, {
+    threshold: 0.1,
+    rootMargin: '100px'
+  })
+
+  if (loadingTrigger.value) {
+    observer.observe(loadingTrigger.value)
+  }
+}
 
 onMounted(async () => {
-  isLoading.value = true
+  await loadPosts(1, true)
 
-  // 模拟从后端异步请求数据
-  const groupedData = await postStore.fetchTimelinePosts()
-
-  // 处理数据结构：按年份倒序
-  const sortedYears = Object.keys(groupedData).sort((a, b) => Number(b) - Number(a))
-  timelineData.value = sortedYears.map(year => ({
-    year,
-    posts: groupedData[year]
-  }))
-
-  isLoading.value = false
-
-  // 2. 动画初始化
+  // 初始化观察器
   nextTick(() => {
-    initAnimations()
+    initObserver()
   })
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+  }
 })
 
 const initAnimations = () => {
@@ -50,7 +138,18 @@ const initAnimations = () => {
   )
 
   // 年份水印视差
+  setTimeout(() => {
+    bindScrollEffects()
+  }, 100)
+}
+
+// 绑定滚动特效
+const bindScrollEffects = () => {
+  // 年份视差
   gsap.utils.toArray('.year-watermark').forEach((el: any) => {
+    if (el.dataset.bound) return
+    el.dataset.bound = "true"
+
     gsap.to(el, {
       y: 150, // 视差移动距离
       ease: "none",
@@ -66,6 +165,9 @@ const initAnimations = () => {
   // 卡片交错进场
   const items = gsap.utils.toArray('.timeline-item')
   items.forEach((item: any) => {
+    if (item.dataset.bound) return
+    item.dataset.bound = "true"
+
     const isLeft = item.classList.contains('left-side')
 
     gsap.fromTo(item,
@@ -91,6 +193,15 @@ const initAnimations = () => {
     )
   })
 }
+
+// 监听 postList 变化，重新绑定新增元素的动画
+import { watch } from 'vue'
+watch(() => postList.value.length, () => {
+  nextTick(() => {
+    bindScrollEffects()
+  })
+})
+
 </script>
 
 <template>
@@ -114,7 +225,8 @@ const initAnimations = () => {
 
         <div class="posts-list">
           <div v-for="(post, index) in group.posts" :key="post.id" class="timeline-item"
-            :class="index % 2 === 0 ? 'left-side' : 'right-side'" @click="router.push(`/article/${post.id}`)">
+            :class="(postList.indexOf(post)) % 2 === 0 ? 'left-side' : 'right-side'" @click="handleOpenPost(post.id)">
+
             <div class="dot-wrapper">
               <div class="dot" :style="{ borderColor: themeStore.themeColor }"></div>
               <div class="connector-line"></div>
@@ -131,6 +243,12 @@ const initAnimations = () => {
           </div>
         </div>
       </div>
+
+      <!-- 加载更多触发器 -->
+      <div ref="loadingTrigger" class="load-more-trigger">
+        <LoadingSpinner v-if="isLoadingMore" size="small" />
+        <p v-if="!hasMore && postList.length > 0" class="no-more">—— 已展示全部内容 ——</p>
+      </div>
     </div>
   </div>
 </template>
@@ -142,6 +260,7 @@ const initAnimations = () => {
 .view-container {
   padding-bottom: 150px;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
 .header-area {
@@ -192,13 +311,14 @@ const initAnimations = () => {
 
 .year-section {
   position: relative;
-  margin-bottom: 150px;
+  margin-bottom: 100px;
+  /* Reduced from 150px */
 }
 
-// --- 🌟 核心修复：年份文字样式 ---
+// 年份文字样式
 .year-watermark {
   position: absolute;
-  top: -80px; // 位置修正
+  top: -80px;
   left: 50%;
   transform: translateX(-50%);
 
@@ -206,10 +326,8 @@ const initAnimations = () => {
   font-size: 12rem;
   font-weight: 800;
   line-height: 1;
-
-  // 🔴 改用实心颜色 + 低透明度，确保可见性
   color: var(--text-main);
-  opacity: 0.06; // 6% 不透明度，作为背景纹理
+  opacity: 0.06;
 
   z-index: 0;
   pointer-events: none;
@@ -220,9 +338,10 @@ const initAnimations = () => {
 .timeline-item {
   position: relative;
   width: 50%;
-  padding-bottom: 80px;
+  // padding-bottom: 40px;
+  /* Reduced from 80px */
   box-sizing: border-box;
-  z-index: 2; // 内容在文字之上
+  z-index: 2;
   cursor: pointer;
 
   &.left-side {
@@ -369,6 +488,21 @@ const initAnimations = () => {
 .loading-wrapper {
   height: 60vh;
   @include flex(center, center);
+}
+
+.load-more-trigger {
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 40px;
+}
+
+.no-more {
+  color: var(--text-sub);
+  opacity: 0.6;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
 }
 
 // --- 移动端 ---

@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-
+export { };
 // 定义环境变量的类型
 interface ImportMetaEnv {
   readonly VITE_APP_TITLE: string
@@ -16,4 +16,10 @@ declare module '*.vue' {
   import type { DefineComponent } from 'vue'
   const component: DefineComponent<{}, {}, any>
   export default component
+}
+
+declare global {
+  interface Window {
+    finishLoading?: () => void; // 声明这个方法是可选的，无返回值的函数
+  }
 }

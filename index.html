@@ -1,15 +1,211 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flow Blog Loading</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.bootcdn.net/ajax/libs/bytemd/1.22.0/index.css" rel="stylesheet">
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      background: #F2F2F2;
+      overflow: hidden;
+    }
+
+    #app {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    /* Loading 容器 */
+    #initial-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #F2F2F2;
+      z-index: 99999;
+      display: flex;
+      font-family: monospace;
+      transition: transform 0.8s cubic-bezier(0.76, 0, 0.24, 1);
+      will-change: transform;
+      /* 性能优化 */
+    }
+
+    .loader-hidden {
+      transform: translateY(-100%);
+    }
+
+    /* 布局 */
+    .panel-left,
+    .panel-right {
+      width: 50%;
+      height: 100%;
+      position: relative;
+    }
+
+    .panel-left {
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* 装饰线 */
+    .grid-v {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .grid-h {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    /* 字体排版 */
+    .hero-typography {
+      margin-top: auto;
+      line-height: 0.85;
+      margin-bottom: 20px;
+    }
+
+    .hero-typography h1 {
+      font-family: 'Oswald', sans-serif;
+      font-size: 14vw;
+      margin: 0;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .text-solid {
+      color: #E0E0E0;
+    }
+
+    .text-outline {
+      color: transparent;
+      -webkit-text-stroke: 1px #D1D1D1;
+      margin-left: 0.5vw;
+    }
+
+    /* 进度条 */
+    .scan-line {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: #111;
+      bottom: 0;
+    }
+
+    .percentage-wrapper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Oswald', sans-serif;
+      font-size: 10vw;
+      color: #111;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="initial-loader">
+    <div class="grid-v"></div>
+    <div class="grid-h"></div>
+    <div class="panel-left">
+      <div class="hero-typography">
+        <h1 class="text-solid">FLOW</h1>
+        <h1 class="text-outline">BLOG</h1>
+      </div>
+    </div>
+    <div class="panel-right">
+      <div class="scan-line" id="scan-line"></div>
+      <div class="percentage-wrapper">
+        <span id="progress-num">0</span>%
+      </div>
+    </div>
+  </div>
+
+  <div id="app"></div>
+
+  <script>
+    (function () {
+      const loader = document.getElementById('initial-loader');
+      const numEl = document.getElementById('progress-num');
+      const lineEl = document.getElementById('scan-line');
+
+      let progress = 0;
+      let target = 90;
+      let speed = 0.5; // 基础速度
+      let isAppReady = false;
+
+      function loop() {
+        if (progress < target) {
+          progress += (target - progress) * 0.05 + 0.1;
+          if (progress > target) progress = target;
+        }
+        const val = Math.floor(progress);
+        if (numEl) numEl.innerText = val;
+        if (lineEl) lineEl.style.bottom = val + '%';
+
+        if (progress < 100) {
+          requestAnimationFrame(loop);
+        } else {
+          if (numEl) numEl.innerText = '100';
+          if (lineEl) lineEl.style.bottom = '100%';
+
+          if (isAppReady) {
+            setTimeout(() => {
+              loader.classList.add('loader-hidden');
+              document.getElementById('app').style.opacity = '1';
+              setTimeout(() => loader.remove(), 1000);
+            }, 500);
+          }
+        }
+      }
+      requestAnimationFrame(loop);
+
+      window.finishLoading = function () {
+        target = 100;
+        isAppReady = true;
+      };
+    })();
+  </script>
+
+  <script>
+    window.process = { env: { NODE_ENV: 'production' } };
+  </script>
+  <% if (isProd) { %>
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.3.4/vue.global.prod.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue-demi/0.14.6/index.iife.min.js"></script>
+
+    <!-- 生态库 -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue-router/4.2.4/vue-router.global.prod.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/pinia/2.1.7/pinia.iife.prod.min.js"></script>
+
+    <!-- 工具库 -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/axios/1.6.0/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+    <% } %>
+
+      <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>

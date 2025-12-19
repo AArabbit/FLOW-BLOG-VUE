@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { h } from 'vue'
-import { NDataTable, NButton, NSpace, NTag } from 'naive-ui'
+import { NDataTable, NButton, NSpace, NTag, NSwitch } from 'naive-ui'
 import { useThemeStore } from '@/stores/theme'
 import type { Post } from '@/types'
 
@@ -12,6 +12,7 @@ const emit = defineEmits<{
   (e: 'create'): void
   (e: 'edit', post: Post): void
   (e: 'delete', id: number): void
+  (e: 'toggle-curated', post: Post, value: boolean): void
 }>()
 
 const themeStore = useThemeStore()
@@ -23,6 +24,15 @@ const columns = [
     key: 'category.name',
     width: 100,
     render: (row: any) => h(NTag, { bordered: false }, { default: () => row.category.name })
+  },
+  {
+    title: '精选',
+    key: 'is_curated',
+    width: 100,
+    render: (row: any) => h(NSwitch, {
+      value: row.is_curated || false,
+      onUpdateValue: (value: boolean) => emit('toggle-curated', row, value)
+    })
   },
   { title: '日期', key: 'date', width: 120 },
   {

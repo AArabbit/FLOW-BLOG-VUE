@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useThemeStore } from '@/stores/theme'
 import type { Post } from '@/types'
+import { PhArrowRight } from "@phosphor-icons/vue";
 
 defineProps<{
   post: Post
@@ -21,7 +22,7 @@ const themeStore = useThemeStore()
       </span>
       <h3 class="item-title">{{ post.title }}</h3>
     </div>
-    <i class="ph ph-arrow-right item-icon"></i>
+    <PhArrowRight class="item-icon"/>
   </div>
 </template>
 
@@ -37,7 +38,6 @@ const themeStore = useThemeStore()
   border-bottom: 1px solid var(--border-light);
   cursor: pointer;
   transition: padding-left 0.3s;
-  // 这里的 fadeIn 动画通常由父组件 GSAP 接管，保留 CSS 动画作为 fallback
   animation: fadeIn 0.5s ease forwards;
 
   &:hover {

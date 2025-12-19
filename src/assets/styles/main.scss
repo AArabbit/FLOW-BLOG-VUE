@@ -12,6 +12,9 @@
   --glass-bg: rgba(247, 247, 245, 0.85);
   --mask-bg: rgba(255, 255, 255, 0.9);
   --code-bg: #eef;
+  --code-block-bg: #fafafa;
+  --nav-bottom-pos: 80px;
+  --nav-capsule-bg: rgba(255, 255, 255, 0.75);
 }
 
 html.dark {
@@ -23,21 +26,38 @@ html.dark {
   --glass-bg: rgba(18, 18, 18, 0.85);
   --mask-bg: rgba(0, 0, 0, 0.8);
   --code-bg: #2b2b2b;
+  --code-block-bg: #2b2b2b;
+  --nav-capsule-bg: rgba(30, 30, 30, 0.75);
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  text-shadow: none !important;
   -webkit-font-smoothing: antialiased;
+}
+
+html {
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
 }
 
 body {
   font-family: $font-main; // 使用变量
   background-color: var(--bg-color);
   color: var(--text-main);
-  overflow-x: hidden;
+  // overflow-x: visible !important; // Critical for position: sticky
+  // overflow-y: visible !important;
   transition: background-color 0.4s ease, color 0.4s ease;
+   min-height: 100vh;
+}
+
+// Ensure no wrapper accidentally clips content
+.app-wrapper,
+.view-container {
+  overflow: visible !important;
 }
 
 a {
@@ -51,7 +71,8 @@ ul {
 }
 
 // Lenis
-html.lenis {
+html.lenis,
+html.lenis body {
   height: auto;
 }
 
@@ -113,23 +134,22 @@ html.lenis {
 }
 
 
-/* 1. 代码块容器的基础样式 */
+/* 代码块容器的基础样式 */
 pre[class*="language-"] {
   position: relative;
   /* 默认展开时的样式 */
   transition: max-height 0.3s ease;
   max-height: 2000px;
-  /* 足够显示长代码 */
   overflow: auto;
 }
 
-/* 2. 收起状态的样式 (由 JS 切换此 class) */
+/* 收起状态的样式 */
 pre.code-collapsed {
   max-height: 120px !important;
   /* 收起后的固定高度 */
   overflow: hidden !important;
 
-  /* 底部渐变遮罩：提示用户代码被截断 */
+  /* 底部渐变遮罩 */
   &::after {
     content: '';
     position: absolute;
@@ -137,7 +157,7 @@ pre.code-collapsed {
     left: 0;
     width: 100%;
     height: 60px;
-    /* 请根据你的代码块背景色修改这里的颜色 */
+    /* 请根据代码块背景色修改这里的颜色 */
     /* 如果是深色主题 (tomorrow/twilight)，用 rgba(45,45,45, 1) */
     /* 如果是浅色主题 (default)，用 rgba(255,255,255, 1) */
     background: linear-gradient(to bottom, transparent, rgba(45, 45, 45, 1));
@@ -145,11 +165,11 @@ pre.code-collapsed {
   }
 }
 
-/* 3. 定制 Prism Toolbar (右上角的按钮区域) */
+/* 右上角的按钮区域 */
 div.code-toolbar {
   position: relative;
 
-  /* 默认隐藏工具栏，鼠标悬停时才显示，保持页面整洁 */
+  /* 默认隐藏工具栏，鼠标悬停时才显示 */
   >.toolbar {
     position: absolute;
     top: 5px;

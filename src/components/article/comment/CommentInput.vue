@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { NButton, NAvatar, NInput } from 'naive-ui'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
+import { NAvatar, NInput, NButton } from 'naive-ui';
+import { PhChatCircleText } from "@phosphor-icons/vue";
 
 const props = defineProps<{
   isSubmitting: boolean
@@ -47,7 +48,7 @@ const handleSubmit = () => {
 
     <div v-else class="guest-input" @click="uiStore.toggleLoginModal(true)">
       <div class="placeholder-box">
-        <i class="ph ph-chat-circle-text"></i>
+        <PhChatCircleText :size="22"/>
         <span>登录以参与讨论...</span>
       </div>
     </div>

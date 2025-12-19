@@ -4,6 +4,8 @@ import gsap from 'gsap'
 import { usePostStore } from '@/stores/posts'
 import { usePagination } from '@/utils/usePagination'
 import type { Post } from '@/types'
+import { getDailyPost } from '@/api/post'
+import { transformPost } from '@/stores/modules/posts-data'
 
 // 组件引入
 import FeaturedSpotlight from '@/components/featured/FeaturedSpotlight.vue'
@@ -15,23 +17,28 @@ defineOptions({ name: 'FeaturedView' })
 
 const postStore = usePostStore()
 
+// 每日精选文章
+const spotlightPost = ref<Post | null>(null)
+const spotlightLoading = ref(false)
+
 // 使用分页 Hook
 const {
   list: listPosts, isLoading, isInitialLoad, hasMore, sentinelRef, loadData, initObserver
-} = usePagination((page) => postStore.fetchPosts({ page, pageSize: 10 }))
+} = usePagination<Post>((page) => postStore.fetchPosts({ page, pageSize: 10 }))
 
-const spotlightPost = computed(() => postStore.posts[0])
+// 过滤精选文章
+const curatedPosts = computed(() => (listPosts.value as Post[]).filter((p: Post) => p.is_curated))
+const displayList = computed(() => curatedPosts.value)
 
-// 鼠标跟随，异步预览逻辑
 const cursorComponentRef = ref<{ rootRef: HTMLElement } | null>(null)
 const activePreviewText = ref('')
 const activeCategory = ref('')
 const isPreviewLoading = ref(false) // 预览框加载状态
 
-// 用于解决竞态问题：记录当前 Hover 的 ID
+// 记录当前 Hover 的 ID
 let currentHoverToken = 0
 
-// GSAP quickTo
+// GSAP
 const xTo = ref<any>(null)
 const yTo = ref<any>(null)
 
@@ -55,15 +62,13 @@ const onListHover = async (post: Post) => {
 
   // 进入加载状态
   isPreviewLoading.value = true
-  activePreviewText.value = '' // 清空旧内容，避免闪烁
+  activePreviewText.value = ''
   activeCategory.value = ''
 
-  // 模拟后端请求 (随机延迟 300ms - 800ms)
+  // 随机延迟 300ms - 800ms
   await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500))
 
-  // 只有当用户仍然 Hover 在同一个元素上时，才更新内容
   if (currentHoverToken === token) {
-    // 模拟从后端获取到了更详细的摘要
     activePreviewText.value = post.desc
     activeCategory.value = post.category.name
     isPreviewLoading.value = false
@@ -81,6 +86,19 @@ const onListLeave = () => {
 }
 
 onMounted(async () => {
+  // 加载每日精选文章
+  spotlightLoading.value = true
+  try {
+    const response = await getDailyPost()
+    // 转换后端数据为前端 Post 类型
+    spotlightPost.value = transformPost(response.postsDaily, postStore.categories)
+  } catch (error) {
+    console.error('Failed to fetch daily post:', error)
+  } finally {
+    spotlightLoading.value = false
+  }
+
+  // 加载精选文章列表
   await loadData(true)
   initObserver()
 
@@ -102,7 +120,10 @@ onMounted(async () => {
 
 watch(() => listPosts.value.length, () => {
   nextTick(() => {
-    gsap.fromTo('.list-row:not(.animated)',
+    const targets = document.querySelectorAll('.list-row:not(.animated)')
+    if (targets.length === 0) return
+
+    gsap.fromTo(targets,
       { y: 20, opacity: 0 },
       { y: 0, opacity: 1, stagger: 0.08, duration: 0.8, ease: "power2.out", clearProps: "all", onComplete: function () { (this.targets() as HTMLElement[]).forEach(el => el.classList.add('animated')) } }
     )
@@ -113,14 +134,14 @@ watch(() => listPosts.value.length, () => {
 <template>
   <div class="view-container" @mousemove="handleMouseMove">
 
-    <div v-if="isInitialLoad" class="loading-container">
+    <div v-if="isInitialLoad || spotlightLoading" class="loading-container">
       <LoadingSpinner size="large" />
     </div>
 
     <template v-else>
       <FeaturedSpotlight v-if="spotlightPost" :post="spotlightPost" />
 
-      <FeaturedList :posts="listPosts" @item-hover="onListHover" @item-leave="onListLeave" />
+      <FeaturedList :posts="displayList" @item-hover="onListHover" @item-leave="onListLeave" />
 
       <div ref="sentinelRef" class="sentinel">
         <LoadingSpinner v-if="isLoading" size="small" />

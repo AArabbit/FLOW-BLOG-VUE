@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { NButton, NInput, NSpace, NInputGroup } from 'naive-ui'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
@@ -12,20 +12,30 @@ const uiStore = useUIStore()
 
 const form = ref({ username: '', password: '', email: '', code: '' })
 const isLoading = ref(false)
+const isSendingCode = ref(false)
 const countdown = ref(0)
 
+const isEmailValid = computed(() => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)
+})
+
 const handleSendCode = async () => {
-  if (!form.value.email.includes('@')) {
-    uiStore.setAuthError('请输入有效的邮箱')
-    return
+  if (!isEmailValid.value) return
+
+  isSendingCode.value = true
+  try {
+    const success = await authStore.sendVerificationCode(form.value.email)
+    if (success) {
+      uiStore.setAuthSuccess('验证码已发送')
+      countdown.value = 60
+      const timer = setInterval(() => {
+        countdown.value--
+        if (countdown.value <= 0) clearInterval(timer)
+      }, 1000)
+    }
+  } finally {
+    isSendingCode.value = false
   }
-  await authStore.sendVerificationCode(form.value.email)
-  uiStore.setAuthSuccess('验证码已发送 (Mock: 123456)')
-  countdown.value = 60
-  const timer = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) clearInterval(timer)
-  }, 1000)
 }
 
 const handleSubmit = async () => {
@@ -33,6 +43,12 @@ const handleSubmit = async () => {
     uiStore.setAuthError('请填写完整信息')
     return
   }
+
+  if (!/^[a-zA-Z0-9]+$/.test(form.value.username)) {
+    uiStore.setAuthError('用户名只能包含字母和数字')
+    return
+  }
+
   isLoading.value = true
   const success = await authStore.register(form.value)
   isLoading.value = false
@@ -57,7 +73,8 @@ const handleSubmit = async () => {
         <label>验证码</label>
         <n-input-group>
           <n-input v-model:value="form.code" placeholder="6位验证码" size="large" />
-          <n-button size="large" secondary :disabled="countdown > 0" @click="handleSendCode">
+          <n-button size="large" secondary :disabled="countdown > 0 || !isEmailValid" :loading="isSendingCode"
+            @click="handleSendCode">
             {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
           </n-button>
         </n-input-group>

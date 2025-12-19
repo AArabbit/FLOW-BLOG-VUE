@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch, nextTick } from 'vue'
+import { computed, onMounted, watch, nextTick, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { NGrid, NGridItem, NAvatar, NButton, NEmpty } from 'naive-ui'
 import gsap from 'gsap'
@@ -10,9 +10,8 @@ import { usePagination } from '@/utils/usePagination'
 import PostCard from '@/components/common/PostCard.vue'
 import SkeletonCard from '@/components/common/SkeletonCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import { useBookmarkStore } from '@/stores/bookmarks' 
-//  引入类型定义
-import type { Post } from '@/types'
+import { useBookmarkStore } from '@/stores/bookmarks'
+import { getUser, normalizeBookmarks } from '@/api/auth'
 
 defineOptions({ name: 'UserProfileView' })
 
@@ -24,6 +23,29 @@ const router = useRouter()
 
 // 获取当前用户的收藏 ID 列表
 const bookmarkIds = computed(() => authStore.user?.bookmarks || [])
+const queryParams = reactive({
+  ids: [] as number[]
+})
+
+// 标记是否已完成初始化
+let isInitialized = false
+
+// 刷新用户信息和收藏列表
+const refreshUserBookmarks = async () => {
+  if (!authStore.user) return
+  try {
+    const response = await getUser(authStore.user.id)
+    const userInfo = response.userInfo
+    const normalizedBookmarks = normalizeBookmarks(userInfo.bookmarks)
+    // 更新 authStore 中的用户信息（包括 bookmarks）
+    authStore.updateCurrentUser({
+      ...userInfo,
+      bookmarks: normalizedBookmarks
+    })
+  } catch (error) {
+    console.error('Failed to refresh user bookmarks:', error)
+  }
+}
 
 // 使用分页 Hook
 const {
@@ -36,8 +58,8 @@ const {
   initObserver
 } = usePagination((page) => postStore.fetchPosts({
   page,
-  pageSize: 9,
-  ids: bookmarkIds.value
+  pageSize: 12,
+  ids: queryParams.ids
 }))
 
 // 处理移除收藏
@@ -45,14 +67,16 @@ const handleUnbookmark = async (e: Event, id: number) => {
   e.stopPropagation()
   //  调用 Store 移除数据
   await bookmarkStore.toggleBookmark(id)
-
-  // 手动从当前列表中移除
-  // 显式指定参数 p 的类型为 Post
-  const index = posts.value.findIndex((p: Post) => p.id === id)
-  if (index !== -1) {
-    posts.value.splice(index, 1)
-  }
 }
+
+// 监听 bookmarkIds 变化，重新加载文章列表
+watch(bookmarkIds, async (newIds, oldIds) => {
+  // 更新查询参数
+  queryParams.ids = [...newIds]
+  if (isInitialized) {
+    await loadData(true)
+  }
+}, { deep: true })
 
 // 监听列表变化，执行进场动画
 watch(() => posts.value.length, () => {
@@ -76,9 +100,18 @@ onMounted(async () => {
     return
   }
 
+  // 刷新用户信息获取最新的收藏列表
+  await refreshUserBookmarks()
+
+  // 初始化查询参数
+  queryParams.ids = [...bookmarkIds.value]
+
   // 初始加载
   await loadData(true)
   initObserver()
+
+  // 标记初始化完成
+  isInitialized = true
 
   // 头部进场动画
   gsap.from('.profile-header', { y: 30, opacity: 0, duration: 0.8, ease: "power2.out" })
@@ -107,29 +140,19 @@ onMounted(async () => {
       </div>
       <div class="divider"></div>
 
-      <n-grid x-gap="32" y-gap="32" cols="1 s:1 m:2 l:3" responsive="screen">
+      <n-grid x-gap="32" y-gap="40" cols="1 s:1 m:2 l:3 xl:4" responsive="screen">
+
+        <n-grid-item v-for="post in posts" :key="post.id" class="grid-item">
+          <PostCard :post="post" />
+        </n-grid-item>
 
         <template v-if="isInitialLoad">
-          <n-grid-item v-for="n in 3" :key="n">
+          <!-- 骨架屏改为 8 个 (2行 * 4列) -->
+          <n-grid-item v-for="n in 8" :key="`s-${n}`">
             <SkeletonCard />
           </n-grid-item>
         </template>
 
-        <template v-else>
-          <n-grid-item v-for="post in posts" :key="post.id" class="grid-item">
-            <div class="bookmark-card-wrapper">
-              <PostCard :post="post" />
-
-              <div class="action-overlay">
-                <n-button size="small" secondary type="error" class="remove-btn"
-                  @click="(e) => handleUnbookmark(e, post.id)">
-                  <template #icon><i class="ph ph-trash"></i></template>
-                  移除收藏
-                </n-button>
-              </div>
-            </div>
-          </n-grid-item>
-        </template>
       </n-grid>
 
       <div v-if="!isInitialLoad && posts.length === 0" class="empty-state">
@@ -226,29 +249,39 @@ onMounted(async () => {
   margin-bottom: 40px;
 }
 
-.bookmark-card-wrapper {
-  position: relative;
-  height: 100%;
+.remove-btn {
+  height: 56px;
+  padding: 0 24px;
+  border-radius: 28px;
+  transform: scale(0.5) rotateZ(0.1deg);
+  transform-origin: top right;
+  will-change: transform;
+  font-size: 24px;
+  font-weight: 500;
+  // background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
 
-  &:hover .action-overlay {
-    opacity: 1;
-    pointer-events: auto;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border: none;
+
+  // --- 渲染质量提示 ---
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  backface-visibility: hidden;
+  perspective: 1000px;
+
+  // Naive UI 内部元素调整
+  :deep(.n-button__icon) {
+    font-size: 28px;
+    margin-right: 6px;
+    // 强制图标重绘
+    transform: translateZ(0);
   }
-}
 
-.action-overlay {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-  z-index: 10;
-
-  .remove-btn {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(4px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  :deep(.n-button__content) {
+    line-height: 1;
+    // 强制文字抗锯齿
+    text-rendering: optimizeLegibility;
   }
 }
 

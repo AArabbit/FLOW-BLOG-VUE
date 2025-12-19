@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
-// 增加 isLoading 属性
 defineProps<{
   text: string
   category: string
@@ -56,8 +55,6 @@ defineExpose({ rootRef })
   border-radius: 4px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border-light);
-
-  // 保持最小高度，防止加载/内容切换时高度跳动
   min-height: 180px;
   display: flex;
   flex-direction: column;

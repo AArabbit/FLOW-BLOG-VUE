@@ -3,7 +3,8 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
+    
     "strict": true,
     "jsx": "preserve",
     "sourceMap": true,
@@ -16,14 +17,14 @@
     ],
     "skipLibCheck": true,
     "noEmit": true,
-    /* 路径别名配置，配合 Vite 使用 */
-    "baseUrl": ".",
+
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*" 
       ]
     },
-    /* 类型声明，解决 import.meta 和 .vue 文件的类型报错 */
+
+    /* 类型声明 */
     "types": [
       "vite/client",
       "node"

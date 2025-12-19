@@ -8,7 +8,7 @@ defineProps<{
   results: Post[]
   query: string
   isLoading: boolean
-  isSearching: boolean // 防抖期间的 loading
+  isSearching: boolean
   isInitialLoad: boolean
 }>()
 

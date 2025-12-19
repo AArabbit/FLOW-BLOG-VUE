@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, h } from 'vue'
-import { NDataTable, NButton, NModal, NForm, NFormItem, NInput, NSelect, NTag, NSpace, useMessage, NPopconfirm } from 'naive-ui'
+import { ref, h, onMounted } from 'vue'
+import {  NButton, NModal, NForm, NFormItem, NInput, NSelect, NTag, NSpace, useMessage, NPopconfirm, NPagination, NDataTable } from 'naive-ui'
 import { useAdminStore } from '@/stores/admin' // 替换 useAuthStore
 import { useThemeStore } from '@/stores/theme'
 
@@ -56,6 +56,16 @@ const handleDelete = (id: number) => {
   adminStore.deleteUser(id)
   message.success('用户已删除')
 }
+
+const handlePageChange = (page: number) => {
+  adminStore.fetchUsers(page, 30)
+}
+
+onMounted(() => {
+  if (adminStore.userList.length === 0) {
+    adminStore.fetchUsers(1, 30)
+  }
+})
 </script>
 
 <template>
@@ -65,7 +75,12 @@ const handleDelete = (id: number) => {
       <p class="subtitle">管理注册用户及其权限</p>
     </div>
 
-    <n-data-table :columns="columns" :data="adminStore.userList" :bordered="false" />
+    <n-data-table :columns="columns" :data="adminStore.userList" :bordered="false" :loading="adminStore.isLoading" />
+
+    <div class="pagination-container">
+      <n-pagination v-model:page="adminStore.currentPage" :page-size="30" :item-count="adminStore.total"
+        @update:page="handlePageChange" />
+    </div>
 
     <n-modal v-model:show="showEditModal">
       <div class="edit-card">
@@ -73,6 +88,9 @@ const handleDelete = (id: number) => {
         <n-form :model="editFormModel" label-placement="left" label-width="80">
           <n-form-item label="昵称">
             <n-input v-model:value="editFormModel.name" />
+          </n-form-item>
+          <n-form-item label="头像">
+            <n-input v-model:value="editFormModel.avatar" placeholder="输入头像 URL" />
           </n-form-item>
           <n-form-item label="邮箱">
             <n-input v-model:value="editFormModel.email" />
@@ -102,6 +120,12 @@ const handleDelete = (id: number) => {
   .subtitle {
     color: var(--text-sub);
   }
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .edit-card {
