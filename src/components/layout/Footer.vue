@@ -8,7 +8,7 @@ import { PhArrowUpRight, PhGithubLogo, PhCopyright } from "@phosphor-icons/vue";
 gsap.registerPlugin(ScrollTrigger);
 
 // 配置信息
-const icpRecord = "滇ICP备2025075619号";
+const icpRecord = "京ICP备0999999999号";
 const icpLink = "https://beian.miit.gov.cn";
 const githubLink = "https://github.com/AArabbit";
 

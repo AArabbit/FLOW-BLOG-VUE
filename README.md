@@ -12,22 +12,31 @@
 
 ## 目前暂无预览站点，后端还在开发中，本质是为了学习后端项目开发而设计的项目
 
-![1764567786572](images/README/1764567786572.png)
-
-![1764567795635](images/README/1764567795635.png)
-
-![1764567803974](images/README/1764567803974.png)
-
 ## 若要预览，请拉取项目后根据下方指示本地运行项目
 
-拉取项目请先fork，dev为开发分支，master为生产分支
+拉取项目请先fork
 
-根目录 .env.development 配置开发环境变量，.env.production 配置生产环境变量
+### 重要: dev为开发分支，master为生产分支，v2为新版本，该版本已对接后端，且大幅改版页面，后端项目见下方
 
-安装依赖：npm install
+### v2版本说明:
 
-运行项目：npm run dev
+1. 首页文章卡片改为3D, 只展示最新四篇文章, 添加新的全部文章页面
+2. 添加轮盘组件, 展示常用文档
+3. 修改页脚样式
+4. 文章渲染编辑改用vditor, 自定义代码块样式
+5. 文章详情页使用弹窗打开, 在弹窗打开时刷新会使用旧的文章详情页
+6. 添加访客ip记录, 管理员后台能看到访客的ip(需配合后端服务)
 
-登录管理员：admin password
+### 后端项目: https://github.com/AArabbit/Go-FlowBlog.git
+
+### 运行: 
+
+  根目录 .env.development 配置开发环境变量，.env.production 配置生产环境变量
+
+  安装依赖：npm install
+
+  运行项目：npm run dev
+
+  登录管理员：admin password (使用v2版本请先本地配置好后端, 并运行)
 
 如果你喜欢，请给我一个star.
