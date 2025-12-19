@@ -27,7 +27,7 @@
 5. 文章详情页使用弹窗打开, 在弹窗打开时刷新会使用旧的文章详情页
 6. 添加访客ip记录, 管理员后台能看到访客的ip(需配合后端服务)
 
-### 后端项目: https://github.com/AArabbit/Go-FlowBlog.git
+### 后端项目(有可预览站点): https://github.com/AArabbit/Go-FlowBlog.git
 
 ### 运行: 
 
