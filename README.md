@@ -13,7 +13,7 @@
 ## 暂无预览站点，本质是为了学习后端项目开发而设计的项目
 ![alt text](images/README/1764567786572.png)
 ![alt text](images/README/1764567803974.png)
-![alt text](images/README/1764567803974.png)
+![alt text](images/README/1764567795635.png)
 
 ## 若要预览，请拉取项目后根据下方指示本地运行项目
 
